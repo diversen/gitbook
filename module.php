@@ -153,41 +153,67 @@ class gitbook {
         }
 
         if (isset($_POST['delete_files'])) {
-            $this->deleteFiles($_GET['id']);
+            $this->deletePublicFiles($_GET['id']);
+            $this->deleteRepoFiles($_GET['id']);
+            $this->updateRow($_GET['id'], array('published' => 0));
             http::locationHeader('/gitbook/repos', lang::translate('Repo files has been purged!'));
         }
         
         if (isset($_POST['delete_all'])) {
-            $this->deleteFiles($_GET['id']);
+            $this->deletePublicFiles($_GET['id']);
+            $this->deleteRepoFiles($_GET['id']);
             $this->deleteRow($_GET['id']);
             http::locationHeader('/gitbook/repos', lang::translate('Repo files has been purged. Database entry has been removed!'));
         }
         
-        
-
+        echo html_helpers::confirmDeleteForm(
+                'delete_files', lang::translate('Remove git repo and exported files - but leave repo in database'));
         
         echo html_helpers::confirmDeleteForm(
-                'delete_files', lang::translate('Remove git repo and exported files'));
-        
-        echo html_helpers::confirmDeleteForm(
-                'delete_all', lang::translate('Remove everything. Any links to your repo will be changed'));
+                'delete_all', lang::translate('Remove everything. Be carefull as any links to this repo no longer will be found!'));
     }
 
-    public function deleteFiles ($id) {
-        $private_path = $this->fileRepoPath($id, 'file');
+    /**
+     * delete public files
+     * @param int $id repo id
+     */
+    public function deletePublicFiles ($id) {
         $public_path = config::getFullFilesPath() . $this->exportsDir($id);
-        file::rrmdir($private_path);
         file::rrmdir($public_path);
     }
     
+    /**
+     * delete repo files from id
+     * @param int $id
+     */
+    public function deleteRepoFiles ($id) {
+        $private_path = $this->fileRepoPath($id, 'file');
+        file::rrmdir($private_path);
+        
+    }
     
+    /**
+     * update repo row
+     * @param int $id
+     * @param array $values
+     * @return int $res
+     */
+    public function updateRow ($id, $values) {
+        return db_rb::updateBean('gitrepo', $id, $values);
+    } 
+
+    /**
+     * delete repo row from id
+     * @param int $id
+     * @return int $res
+     */
     public function deleteRow($id) {
-        return db_q::delete('gitrepo')->filter('id =', $id)->exec();
+        return $res = db_q::delete('gitrepo')->filter('id =', $id)->exec();
     }
 
     /**
      * form for adding the repo
-     * @return type
+     * @return string $str html
      */
     public function addForm() {
         $f = new html();
@@ -406,7 +432,7 @@ class gitbook {
      */
     public function mdAllFile($id) {
         $row = $this->get($id);
-        $md_file = config::getFullFilesPath() . $this->exportsDir($id) . "/$row[name]";
+        $md_file = config::getFullFilesPath() . $this->exportsDir($id) . "/$row[name].md";
         return $md_file;
     }
 
@@ -920,6 +946,7 @@ EOF;
             die();
         }
         echo lang::translate("Done ") . $type . "<br/>";
+        return $ret;
     }
 
     /**
