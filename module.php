@@ -152,20 +152,37 @@ class gitbook {
             return;
         }
 
-        if (isset($_POST['submit'])) {
-            $this->delete($_GET['id']);
-            http::locationHeader('/gitbook/repos', lang::translate('Repo has been deleted'));
+        if (isset($_POST['delete_files'])) {
+            $this->deleteFiles($_GET['id']);
+            http::locationHeader('/gitbook/repos', lang::translate('Repo files has been purged!'));
         }
+        
+        if (isset($_POST['delete_all'])) {
+            $this->deleteFiles($_GET['id']);
+            $this->deleteRow($_GET['id']);
+            http::locationHeader('/gitbook/repos', lang::translate('Repo files has been purged. Database entry has been removed!'));
+        }
+        
+        
 
-        echo html_helpers::confirmDeleteForm('submit', lang::translate('Confirm removal of repo'));
+        
+        echo html_helpers::confirmDeleteForm(
+                'delete_files', lang::translate('Remove git repo and exported files'));
+        
+        echo html_helpers::confirmDeleteForm(
+                'delete_all', lang::translate('Remove everything. Any links to your repo will be changed'));
     }
 
-    public function delete($id) {
+    public function deleteFiles ($id) {
         $private_path = $this->fileRepoPath($id, 'file');
         $public_path = config::getFullFilesPath() . $this->exportsDir($id);
         file::rrmdir($private_path);
         file::rrmdir($public_path);
-        db_q::delete('gitrepo')->filter('id =', $id)->exec();
+    }
+    
+    
+    public function deleteRow($id) {
+        return db_q::delete('gitrepo')->filter('id =', $id)->exec();
     }
 
     /**
