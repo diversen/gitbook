@@ -7,6 +7,7 @@ use diversen\db\rb as db_rb;
 use diversen\html;
 use diversen\html\helpers as html_helpers;
 use diversen\cli\optValid;
+use diversen\pagination;
 //use diversen\file\string as file_string;
 
 class gitbook {
@@ -16,13 +17,6 @@ class gitbook {
      */
     public function __construct() {
         db_rb::connect();
-    }
-
-    /**
-     * list actions public
-     */
-    public function indexAction() {
-        echo "List repos";
     }
 
     /**
@@ -42,6 +36,7 @@ class gitbook {
     }
 
     /*
+     * display all user repos
      * action for /gitbook/repos
      */
 
@@ -60,21 +55,63 @@ class gitbook {
 
         echo $this->viewAddRepo();
     }
+    
+    
+    /**
+     * list actions public
+     */
+    public function indexAction() {
+        
+        $per_page = 20;
+        $num_rows = db_q::numRows('gitrepo')->fetch();
+        
+        $rows = db_q::select('gitrepo')->
+                order('hits', 'DESC')->
+                limit(0, 1)->
+                fetch();
+        
+        print_r($rows);
+    }
 
+    /**
+     * view repo rows
+     * @param array $rows
+     * @return string $str HTML
+     */
     public function viewRepos($rows) {
 
         $str = '';
         foreach ($rows as $row) {
-            $str.= html::createLink($row['repo'], html::getHeadline($row['repo']));
-            $str.= $this->repoOptions($row);
-            $str.= MENU_SUB_SEPARATOR_SEC;
-            $str.= $this->viewExports($row['id']);
+            $str.= $this->viewRepo($row);
         }
+        return $str;
+    }
+    
+    /**
+     * view single repo
+     * @param array $row
+     * @return string $str HTML
+     */
+    public function viewRepo($row) {
+        $str = '';
+        $str.= html::createLink($row['repo'], html::getHeadline($row['title']));
+        $str.= html::createLink($row['repo'], $row['repo']) . "<br />";
+        $str.= $this->optionsRepo($row);
+        $str.= MENU_SUB_SEPARATOR_SEC;
 
+        $ary = $this->exportsArray($row['id']);
+        $str.= lang::translate('Exports: ');
+        $str.= implode(MENU_SUB_SEPARATOR, $ary);
+        $str.= "<hr />";
         return $str;
     }
 
-    public function repoOptions($row) {
+    /**
+     * display repo options
+     * @param array $row
+     * @return string $str
+     */
+    public function optionsRepo($row) {
 
         $str = '';
         $str.= html::createLink("/gitbook/delete?id=$row[id]&delete=1", lang::translate('Delete'));
@@ -234,9 +271,11 @@ class gitbook {
     }
 
     /**
-     * 
+     * get array of export files with type as key and file_path as value
+     * @param int $id repo id
+     * @return array $ary array with type as key and file_path as value
      */
-    public function viewExports($id) {
+    public function exportsArray($id) {
 
         $path = $this->fileRepoPath($id, 'file');
         $repo = $this->get($id);
@@ -245,26 +284,15 @@ class gitbook {
         $name = $this->repoName($repo['repo']);
         $exports = $this->exportFormats();
 
-        $str = lang::translate('Exports: ');
-
-        $i = count($exports);
+        $ary = array ();
         foreach ($exports as $export) {
-
             $file = $path_full . "/$name.$export";
-
-
             if (file_exists($file)) {
                 $location = $path . "/$name.$export";
-                $str.= html::createLink($location, strtoupper($export));
-                $str.= ' ';
-            }
-
-            $i--;
-            if ($i) {
-                $str.= MENU_SUB_SEPARATOR;
+                $ary[$export]= html::createLink($location, strtoupper($export));
             }
         }
-        return $str;
+        return $ary;
     }
 
     /**
@@ -374,13 +402,13 @@ class gitbook {
         $id = filter_var($_GET['id'], FILTER_VALIDATE_INT);
 
         if (!user::ownID('gitrepo', $id, session::getUserId())) {
-            echo "You can not perform action on this repo. ";
+            echo lang::translate("You can not perform any action on this page.");
             die();
         }
 
         sleep($sleep);
         echo lang::translate('Fetching repo ') . "<br />";
-        $res = $this->checkoutRepo($id);
+        $res = $this->execCheckout($id);
         if ($res) {
             echo lang::translate('Could not checkout repo. Somethings went wrong. Try again later') . "<br />";
             die();
@@ -390,11 +418,27 @@ class gitbook {
 
         // get parse options from git repos YAML
         $options = $this->yamlAsAry($id);
+        
+        // always update title if found
+        $bean = db_rb::getBean('gitrepo', 'id', $id);
+        $bean->title = $options['title'];
+        R::store($bean);
+        
+        
+        // TODO: get real exports - meta.yaml
         $formats = $this->exportFormats();
+        print_r($formats);
 
+        $public_path = config::getFullFilesPath() . $this->exportsDir($id);
+        //file::rrmdir($private_path);
+        file::rrmdir($public_path);
+        die;
+        
         // export all md files to single file
         $md_file = $this->mdAllFile($id);
+        
         $str = $this->filesAsStr($id);
+        
         $write_res = file_put_contents($md_file, $str);
         if (!$write_res) {
             echo lang::translate('Could not write to file system ') . "<br />";
@@ -405,7 +449,7 @@ class gitbook {
             
             
             // generate HTML fragment which will be used as menu
-            $this->generateHtmlMenu($id, $options);
+            $this->exportsHtmlMenu($id);
             
             // run pandoc
             $this->pandocCommand($id, 'html', $options);
@@ -446,21 +490,18 @@ class gitbook {
         die;
     }
     
-    public function generateHtmlMenu($id, $options) {
+    public function exportsHtmlMenu($id) {
 
-        // repo name
-        $repo = $this->get($id);
-        $repo_name = $this->repoName($repo['repo']);
         
         $export_dir = $this->exportsDirFull($id);
         $export_file = "$export_dir/header.html";
         
-        $formats = $this->exportFormats();
+        //$formats = $this->exportFormats();
         //$str = '';
         $ary = array ();
-        foreach ($formats as $format) {
-            $ary[] = "<li>" . html::createLink("$repo_name.$format", strtoupper($format)) . "</li>";
-            //$ary[] = "<a href=\"\">$format</a>";
+        $exports = $this->exportsArray($id);
+        foreach ($exports as $format) {
+            $ary[] = "<li>" . $format . "</li>";
         }
         $ary[] = "<li>" . html::createLink('/', 'Go to gittobook.org') . "</li>";
         $str = '<div id="main_menu"><ul>' . implode('', $ary) . '</ul></div>';
@@ -552,19 +593,21 @@ class gitbook {
      * some default options when meta.yaml is not supplied.
      * @return type
      */
-    public function defaultOptions() {
+    public function yamlDefault() {
         $str = <<<EOF
 ---
-title: Git To Book
-subject: Test
-author: Test
+title: Untitled
+subject: Not known
+author: John Doe
 keywords: ebooks, pandoc, pdf, html, epub, mobi
 rights: Creative Commons Non-Commercial Share Alike 3.0
 language: en-US
+# default formats
 format-arguments:
     pdf: -s -S --latex-engine=pdflatex --number-sections --toc
     html: -s -S --chapters --number-sections --toc -t html5
-    epub: -s -S  --epub-chapter-level=3 --number-sections --toc --epub-chapter-level=4
+    epub: -s -S  --epub-chapter-level=3 --number-sections --toc
+    mobi: 
 ...
 EOF;
         $yaml = new Parser();
@@ -582,7 +625,7 @@ EOF;
         if (file_exists($file)) {
             $values = $yaml->parse(file_get_contents($file));
         } else {
-            $values = $this->defaultOptions();
+            $values = $this->yamlDefault();
         }
         return $values;
     }
@@ -616,11 +659,7 @@ EOF;
         foreach ($files as $file) {
             $files_str.= file_get_contents($file) . "\n";
         }
-        return html::specialEncode($files_str);
-    }
-
-    public function cleanOptions($flags) {
-        $ary = explode(' ', $flags);
+        return $files_str;
     }
 
     /**
@@ -652,19 +691,21 @@ EOF;
      * @return string $str modified string
      */
     public function pandocAddArgs ($id, $type) {
+        $str ='';
         if ($type == 'html') {
             
             // add menu with downloads in html header
             $export_dir = $this->exportsDirFull($id);
             $export_file = "$export_dir/header.html";
-            $str = " --include-before-body=$export_file ";
-            
-            return $str;
+            $str.= " --include-before-body=$export_file -t html5 ";
         }
         
         if ($type == 'pdf') {
-            return " --latex-engine=xelatex ";
+            $str.= " --latex-engine=xelatex ";
         }
+        
+        $str.= " --from=markdown-raw_html ";
+        return $str;
     }
     
     /**
@@ -711,6 +752,8 @@ EOF;
             'epub-chapter-level' => '1-6',
             // epub-embed-font
             'epub-embed-font' => null,
+            // Specify output format.
+
             'V' => array(
                 'geometry:margin',
                 'documentclass', 
@@ -741,10 +784,10 @@ EOF;
     public function pandocArgErrors ($errors, $type) {
         
         foreach($errors as $error) {
-            $str = lang::translate("Found illigal options in 'format-arguments': ");
+            $str = lang::translate('Found illigal options in <span class="notranslate"><b>format-arguments</b></span>: ');
             $str.= "'$error' ";
             $str.= lang::translate("in type ") . "'$type'. ";
-            $str.= lang::translate('Remove it from meta.yaml');
+            $str.= lang::translate('Remove it from <b>meta.yaml</b>');
             $this->errors[] = $str;
             
         }
@@ -863,23 +906,30 @@ EOF;
      * @param int $id repo id
      * @return int $res return value from shell command
      */
-    public function checkoutRepo($id) {
+    public function execCheckout($id) {
 
         $row = db_q::select('gitrepo')->filter('id =', $id)->fetchSingle();
         if (!$this->isRepo($row)) {
-            $res = $this->clone_($row);
+            $res = $this->execClone($row);
         } else {
             $res = $this->checkout($row);
         }
+        
+        // if exec ok - we add a title from meta.yaml to database 
+        // if one if found - else we set title to unititled
+        if (!$res) {
+            //$this->repoPath($repo)
+        }
+        
         return $res;
     }
 
     /**
      * clone a repo to file system
-     * @param type $row
-     * @return type
+     * @param array $row
+     * @return int $res
      */
-    public function clone_($row) {
+    public function execClone($row) {
         $clone_path = $this->checkoutPath($row['repo']);
         $command = "cd $clone_path && git clone $row[repo]";
         exec($command, $output, $res);

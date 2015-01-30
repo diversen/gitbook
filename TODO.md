@@ -1,7 +1,7 @@
 ### TODO
 
+Order repos from hits
 Public no templates
-Private temlates
-
-
-
+Private templates
+Two kind of delete repos
+share on html page

@@ -3,7 +3,7 @@
 
 // Translation of file /modules/gitbook/install.inc
 
-$_COS_LANG_MODULE['Content'] = 'Content';
+$_COS_LANG_MODULE['Books'] = 'Books';
 
 // Translation of file /modules/gitbook/menu.inc
 

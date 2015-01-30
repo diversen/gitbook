@@ -1,8 +1,8 @@
 <?php
 
-$_INSTALL['VERSION'] = 2.71; 
+$_INSTALL['VERSION'] = 3.01; 
 
-$title = lang::translate('Content', null, array ('no_translate' => true)); 
+$title = lang::translate('Books', null, array ('no_translate' => true)); 
 $url = '/gitbook/index';
 
 $_INSTALL['MAIN_MENU_ITEM'] = array (

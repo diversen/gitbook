@@ -16,11 +16,14 @@ $_COS_LANG_MODULE['Could not checkout repo. Somethings went wrong. Try again lat
 $_COS_LANG_MODULE['Could not write to file system '] = '无法写入文件系统';
 $_COS_LANG_MODULE['Could not move all HTML assets'] = '动弹不得全部HTML资产';
 $_COS_LANG_MODULE['You have a file in your css path which is not allowed. Found file: '] = '你有你的CSS路径的文件，这是不允许的。找到的文件：';
+$_COS_LANG_MODULE['Found illigal options in <span class="notranslate"><b>format-arguments</b></span>: '] = '发现illigal选项<b><span class="notranslate">format-arguments</span></b> ：';
+$_COS_LANG_MODULE['Remove it from <b>meta.yaml</b>'] = '从<b>meta.yaml</b>删除它';
 $_COS_LANG_MODULE['Epub fails! Mobi has no cover image. Specify this in a meta.yaml file'] = 'EPUB失败！摩比没有封面图片。在meta.yaml文件中指定该';
 $_COS_LANG_MODULE['Done '] = 'DONE';
 $_COS_LANG_MODULE['Add a git repo'] = '添加一个git仓库';
 $_COS_LANG_MODULE['Wait while generating site. This may take a minute or two'] = '稍候，生成网站。这可能需要一两分钟';
 $_COS_LANG_MODULE['If no error were reported, you exports has been generated. '] = '如果没有错误的报道，你的出口已经产生。';
 $_COS_LANG_MODULE['Remove it from your repo with: git rm -f '] = '混帐RM -f：从你的回购与中删除';
+$_COS_LANG_MODULE['in type '] = '类型';
 $_COS_LANG_MODULE['Error. You will need to have .md files written in markdown in your repo. No such files found!'] = '错误。你将需要有写在降价在回购.md文件。没有这样的文件，找到了！';
 $_COS_LANG_MODULE['Failed to create export of type: '] = '无法创建类型的出口：';
