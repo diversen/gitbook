@@ -282,7 +282,7 @@ class gitbook {
         $path = config::getWebFilesPath() . $this->exportsDir($id);
         $path_full = config::getFullFilesPath() . $this->exportsDir($id);
         $name = $this->repoName($repo['repo']);
-        $exports = $this->exportFormats();
+        $exports = $this->exportFormatsIni();
 
         $ary = array ();
         foreach ($exports as $export) {
@@ -423,31 +423,26 @@ class gitbook {
         $bean = db_rb::getBean('gitrepo', 'id', $id);
         $bean->title = $options['title'];
         R::store($bean);
-        
-        
-        // TODO: get real exports - meta.yaml
-        $formats = $this->exportFormats();
-        print_r($formats);
 
+        // get export formats
+        $formats = $this->exportFormatsReal($options['format-arguments']);
+
+        // remove old builds
         $public_path = config::getFullFilesPath() . $this->exportsDir($id);
-        //file::rrmdir($private_path);
         file::rrmdir($public_path);
-        die;
         
         // export all md files to single file
         $md_file = $this->mdAllFile($id);
-        
         $str = $this->filesAsStr($id);
-        
         $write_res = file_put_contents($md_file, $str);
         if (!$write_res) {
             echo lang::translate('Could not write to file system ') . "<br />";
             return;
         }
         
+        // html
         if (in_array('html', $formats)) {
-            
-            
+                
             // generate HTML fragment which will be used as menu
             $this->exportsHtmlMenu($id);
             
@@ -461,22 +456,27 @@ class gitbook {
             }
         }
 
+        // epub
         if (in_array('epub', $formats)) {
             $this->pandocCommand($id, 'epub', $options);
         }
         
+        // mobi
         if (in_array('mobi', $formats)) {    
             $this->kindlegenCommand($id, 'mobi', $options);
         }
         
+        // pdf
         if (in_array('pdf', $formats)) {
             $this->pandocCommand($id, 'pdf', $options);
         }
 
+        // docbook
         if (in_array('docbook', $formats)) {
             $this->pandocCommand($id, 'db', $options);
         }
         
+        // texi
         if (in_array('texi', $formats)) {
             $this->pandocCommand($id, 'texi', $options);
         }
@@ -490,40 +490,57 @@ class gitbook {
         die;
     }
     
+    /**
+     * generate a header for html exports
+     * @param int $id repo id
+     */
     public function exportsHtmlMenu($id) {
 
-        
         $export_dir = $this->exportsDirFull($id);
         $export_file = "$export_dir/header.html";
-        
-        //$formats = $this->exportFormats();
-        //$str = '';
+
         $ary = array ();
         $exports = $this->exportsArray($id);
         foreach ($exports as $format) {
             $ary[] = "<li>" . $format . "</li>";
         }
         $ary[] = "<li>" . html::createLink('/', 'Go to gittobook.org') . "</li>";
-        $str = '<div id="main_menu"><ul>' . implode('', $ary) . '</ul></div>';
-                
+        $str = '<div id="main_menu"><ul>' . implode('', $ary) . '</ul></div>';                
         file_put_contents($export_file, $str);
 
     }
 
     /**
      * return gitbook.ini gitbook_exports as array
-     * @return type
+     * @return array $ary exports from ini
      */
-    public function exportFormats() {
+    public function exportFormatsIni() {
         $exports = config::getModuleIni('gitbook_exports');
         return explode(",", $exports);
+    }
+    
+    /**
+     * get export formats real. Formats which is both in ini settings and 
+     * format-arguments
+     * @param array $options format-arguments
+     * @return array $ary formats
+     */
+    public function exportFormatsReal ($options) {
+        $ini = $this->exportFormatsIni();
+        $ary = array ();
+        foreach($options as $key => $val) {
+            if (in_array($key, $ini)) {
+                $ary[] = $key;
+            }
+        }
+        return $ary;
     }
 
     /**
      * moves assets for html
-     * @param type $id
-     * @param type $type
-     * @param type $options
+     * @param int $id
+     * @param string $type
+     * @param array $options
      * @return boolean
      */
     public function moveAssets($id, $type, $options) {
@@ -562,6 +579,7 @@ class gitbook {
     /**
      * return boolean based on $files given. If one does not match return false
      * @param array $files
+     * @param string $dir
      * @return boolean $res 
      */
     public function checkLegalAssets($files, $dir) {
@@ -591,7 +609,7 @@ class gitbook {
 
     /**
      * some default options when meta.yaml is not supplied.
-     * @return type
+     * @return string $str defauly yaml options
      */
     public function yamlDefault() {
         $str = <<<EOF
@@ -616,8 +634,8 @@ EOF;
 
     /**
      * returns parsed yaml
-     * @param type $id
-     * @return type
+     * @param int $id repo id
+     * @return array $values yaml as array
      */
     public function yamlAsAry($id) {
         $yaml = new Parser();
