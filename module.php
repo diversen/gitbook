@@ -8,6 +8,7 @@ use diversen\html;
 use diversen\html\helpers as html_helpers;
 use diversen\cli\optValid;
 use diversen\pagination;
+use diversen\buffer;
 //use diversen\file\string as file_string;
 
 class gitbook {
@@ -178,7 +179,7 @@ class gitbook {
      * @param int $id repo id
      */
     public function deletePublicFiles ($id) {
-        $public_path = config::getFullFilesPath() . $this->exportsDir($id);
+        $public_path = $this->exportsDir($id);
         file::rrmdir($public_path);
     }
     
@@ -188,8 +189,7 @@ class gitbook {
      */
     public function deleteRepoFiles ($id) {
         $private_path = $this->fileRepoPath($id, 'file');
-        file::rrmdir($private_path);
-        
+        file::rrmdir($private_path);        
     }
     
     /**
@@ -251,9 +251,17 @@ class gitbook {
             $this->errors['repo'] = lang::translate('Repo already exists');
             return;
         }
-
+        
+        // without .git
         $no_dot = str_replace('.git', '', $repo);
         $bean = db_rb::getBean('gitrepo', 'repo', $no_dot);
+        if ($bean->id) {
+            $this->errors['repo'] = lang::translate('Repo already exists');
+            return;
+        }
+        
+        // with .git
+        $bean = db_rb::getBean('gitrepo', 'repo', $no_dot . ".git");
         if ($bean->id) {
             $this->errors['repo'] = lang::translate('Repo already exists');
             return;
@@ -312,27 +320,37 @@ class gitbook {
         }
         return $path;
     }
+    
+    public function exportsDirWeb ($id) {
+        return "/books/$id";
+    }
 
     /**
      * get array of export files with type as key and file_path as value
      * @param int $id repo id
      * @return array $ary array with type as key and file_path as value
      */
-    public function exportsArray($id) {
+    public function exportsArray($id, $options = array()) {
 
-        $path = $this->fileRepoPath($id, 'file');
         $repo = $this->get($id);
-        $path = config::getWebFilesPath() . $this->exportsDir($id);
-        $path_full = config::getFullFilesPath() . $this->exportsDir($id);
+        $path = $this->exportsDirWeb($id);
+        $path_full = $this->exportsDir($id);
         $name = $this->repoName($repo['repo']);
         $exports = $this->exportFormatsIni();
 
         $ary = array ();
         foreach ($exports as $export) {
             $file = $path_full . "/$name.$export";
+
             if (file_exists($file)) {
                 $location = $path . "/$name.$export";
-                $ary[$export]= html::createLink($location, strtoupper($export));
+                
+                if (!isset($options['path'])) {
+                    $ary[$export]= html::createLink($location, strtoupper($export));
+                } else {
+                    $ary[$export] = $location;
+                }
+                
             }
         }
         return $ary;
@@ -432,7 +450,7 @@ class gitbook {
      */
     public function mdAllFile($id) {
         $row = $this->get($id);
-        $md_file = config::getFullFilesPath() . $this->exportsDir($id) . "/$row[name].md";
+        $md_file = $this->exportsDir($id) . "/$row[name].md";
         return $md_file;
     }
 
@@ -471,7 +489,7 @@ class gitbook {
         $formats = $this->exportFormatsReal($options['format-arguments']);
 
         // remove old builds
-        $public_path = config::getFullFilesPath() . $this->exportsDir($id);
+        $public_path = $this->exportsDir($id);
         file::rrmdir($public_path);
         
         // export all md files to single file
@@ -480,14 +498,56 @@ class gitbook {
         $write_res = file_put_contents($md_file, $str);
         if (!$write_res) {
             echo lang::translate('Could not write to file system ') . "<br />";
-            return;
+            die();
+        }
+        
+        $exports = array ();
+        
+        // epub
+        if (in_array('epub', $formats)) {
+            $epub_ok = $this->pandocCommand($id, 'epub', $options);
+            if (!$epub_ok) {
+                $exports[] = 'epub';
+            }
+        }
+        
+        // mobi
+        if (in_array('mobi', $formats)) {    
+            $mobi_ok = $this->kindlegenCommand($id, 'mobi', $options);
+            if (!$mobi_ok) {
+                $exports[] = 'mobi';
+            }
+        }
+        
+        // pdf
+        if (in_array('pdf', $formats)) {
+            $pdf_ok = $this->pandocCommand($id, 'pdf', $options);
+            if (!$pdf_ok) {
+                $exports[] = 'pdf';
+            }
+        }
+
+        // docbook
+        if (in_array('docbook', $formats)) {
+            $docbook_ok = $this->pandocCommand($id, 'db', $options);
+            if (!$docbook_ok) {
+                $exports[] = 'docbook';
+            }
+        }
+        
+        // texi
+        if (in_array('texi', $formats)) {
+            $texi_ok = $this->pandocCommand($id, 'texi', $options);
+            if (!$texi_ok) {
+                $exports[] = 'texi';
+            }
         }
         
         // html
         if (in_array('html', $formats)) {
                 
             // generate HTML fragment which will be used as menu
-            $this->exportsHtmlMenu($id);
+            $this->exportsHtmlMenu($id, $exports);
             
             // run pandoc
             $this->pandocCommand($id, 'html', $options);
@@ -496,33 +556,11 @@ class gitbook {
             $res = $this->moveAssets($id, 'html', $options);
             if (!$res) {
                 $this->errors[] = lang::translate('Could not move all HTML assets');
+            } else {
+                $this->updateRow($id, array('published' => 1));
             }
         }
-
-        // epub
-        if (in_array('epub', $formats)) {
-            $this->pandocCommand($id, 'epub', $options);
-        }
         
-        // mobi
-        if (in_array('mobi', $formats)) {    
-            $this->kindlegenCommand($id, 'mobi', $options);
-        }
-        
-        // pdf
-        if (in_array('pdf', $formats)) {
-            $this->pandocCommand($id, 'pdf', $options);
-        }
-
-        // docbook
-        if (in_array('docbook', $formats)) {
-            $this->pandocCommand($id, 'db', $options);
-        }
-        
-        // texi
-        if (in_array('texi', $formats)) {
-            $this->pandocCommand($id, 'texi', $options);
-        }
 
         sleep($sleep);
         if (empty($this->errors)) {
@@ -591,7 +629,7 @@ class gitbook {
 
         // move to dir
         $repo_path = $this->repoPath($repo);
-        $export_path = config::getFullFilesPath() . $this->exportsDir($id);
+        $export_path = $this->exportsDir($id);
 
         $css_path = $repo_path . "/css";
         if (file_exists($css_path)) {
@@ -697,8 +735,8 @@ EOF;
      * @return type
      */
     public function exportsDir($id) {
-        $exports_dir = "/exports/$id";
-        file::mkdir($exports_dir);
+        $exports_dir = _COS_HTDOCS . "/books/$id";
+        file::mkdirDirect($exports_dir);
         return $exports_dir;
     }
 
@@ -757,8 +795,9 @@ EOF;
             
             // add menu with downloads in html header
             $export_dir = $this->exportsDirFull($id);
-            $export_file = "$export_dir/header.html";
-            $str.= " --include-before-body=$export_file -t html5 ";
+            // $export_file = "$export_dir/header.html";
+            // $str.= " --include-before-body=$export_file -t html5 ";
+            $str.= " -t html5 ";
         }
         
         if ($type == 'pdf') {
@@ -863,7 +902,8 @@ EOF;
         exec("kindlegen", $output, $ret);
         if ($ret) {
             log::error('Kindlegen was not found on system');
-            die();
+            return $ret;
+    
         }
         if (!isset($options['cover-image'])) {
             $e = lang::translate('Epub fails! Mobi has no cover image. Specify this in a meta.yaml file');
@@ -873,7 +913,6 @@ EOF;
 
         $repo = $this->get($id);
         $export_dir = $this->exportsDir($id);
-        $export_dir = config::getFullFilesPath() . "$export_dir";
 
         // command
         $command = "cd $export_dir && kindlegen " .
@@ -884,14 +923,16 @@ EOF;
         exec($command, $output, $ret);
         if ($ret) {
             log::error($command);
-            echo "Kindle failed<br />";
+            echo lang::translate("Kindle failed") . "<br />";
+            return $ret;
         }
         echo lang::translate('Done ') . "Mobi<br/>";
+        return $ret;
     }
 
     public function exportsDirFull ($id) {
         $export_dir = $this->exportsDir($id);
-        $export_dir_full = config::getFullFilesPath() . $export_dir;
+        $export_dir_full = $export_dir;
         return $export_dir_full;
     }
     /**
@@ -943,9 +984,9 @@ EOF;
             echo html::getErrors($output);
             log::error($command);
             log::error($output);
-            die();
+        } else {
+            echo lang::translate("Done ") . $type . "<br/>";
         }
-        echo lang::translate("Done ") . $type . "<br/>";
         return $ret;
     }
 
@@ -1029,8 +1070,32 @@ EOF;
             mkdir($path, 0777, true);
         }
         return $path;
+    }  
+    
+    public function read () {
+        //http_send_content_disposition("document.pdf", true);
+        //http_send_content_type("application/pdf");
+        //http_throttle(0.1, 2048);
+        //http_send_file("../report.pdf");
+        
+        
+        
+        buffer::cleanAll();
+        
+        http_send_content_disposition("wolf.avi", true);
+        http_send_content_type("application/x-troff-msvideo");
+        http_throttle(1, 20480000);
+        http_send_file(_COS_HTDOCS . "/test/wolf.avi");
+        die;
+        //echo ob_get_level();
+        $ary = $this->exportsArray(21, array ('path' => true));
+        $path = _COS_HTDOCS . "/$ary[html]";
+        //filereecho $ary['html'];
+        readfile($path);
+        echo "hello world";
+        die;
     }
-    
-    
-    
 }
+
+
+class gitbook_module extends gitbook{}
