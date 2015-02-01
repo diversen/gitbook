@@ -13,7 +13,7 @@ $_INSTALL['MAIN_MENU_ITEM'] = array (
     'weight' => 2,
 );
 
-$_INSTALL['ROUTES'][] = array ('#/read/[0-9]#'=>
+$_INSTALL['ROUTES'][] = array ('#/books/[0-9]#'=>
     array ('method' => 'gitbook::read',
            'module' => 'gitbook',
            'controller' => '/gitbook/read')

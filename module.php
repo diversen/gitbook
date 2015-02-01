@@ -7,8 +7,9 @@ use diversen\db\rb as db_rb;
 use diversen\html;
 use diversen\html\helpers as html_helpers;
 use diversen\cli\optValid;
-use diversen\pagination;
+//use diversen\pagination;
 use diversen\buffer;
+use diversen\uri\direct;
 //use diversen\file\string as file_string;
 
 class gitbook {
@@ -50,7 +51,6 @@ class gitbook {
         if ($bean->id) {
             $user_id = session::getUserId();
             $rows = db_q::select('gitrepo')->filter('user_id =', $user_id)->fetch();
-            $rows = html::specialEncode($rows);
             echo $this->viewRepos($rows);
         }
 
@@ -71,7 +71,8 @@ class gitbook {
                 limit(0, 1)->
                 fetch();
         
-        print_r($rows);
+        
+        echo $this->viewRepos($rows);
     }
 
     /**
@@ -94,8 +95,11 @@ class gitbook {
      * @return string $str HTML
      */
     public function viewRepo($row) {
+        $row = html::specialEncode($row);
         $str = '';
-        $str.= html::createLink($row['repo'], html::getHeadline($row['title']));
+        
+        $url = $this->exportsDirWeb($row['id']) . "/" . $row['name'];
+        $str.= html::createLink($url, html::getHeadline($row['title']));
         $str.= html::createLink($row['repo'], $row['repo']) . "<br />";
         $str.= $this->optionsRepo($row);
         $str.= MENU_SUB_SEPARATOR_SEC;
@@ -296,8 +300,11 @@ class gitbook {
      * @param int $id
      * @return array $repo
      */
-    public function get($id) {
-        return db_q::select('gitrepo')->filter('id =', $id)->fetchSingle();
+    public function get($var) {
+        if (!is_array($var)) {
+            return db_q::select('gitrepo')->filter('id =', $var)->fetchSingle();
+        }
+        return db_q::select('gitrepo')->filterArray($var, 'AND')->fetchSingle();
     }
 
     /**
@@ -316,13 +323,29 @@ class gitbook {
         }
 
         if ($type == 'file') {
-            $path = _COS_PATH . "/private/gitbook/$repo[user_id]" . "/$path";
+            $path = _COS_PATH . "/private/gitbook/$id" . "/$path";
         }
         return $path;
     }
     
+    /**
+     * return a books export dir
+     * @param int $id
+     * @return string $path
+     */
     public function exportsDirWeb ($id) {
         return "/books/$id";
+    }
+    
+    /**
+     * return a books export dir with repo name
+     * /books/10/a-book-name
+     * @param type $row
+     * @return type
+     */
+    public function exportsDirBook($row) {
+        
+        return $this->exportsDirWeb($row['id']) . "/" . strings::utf8SlugString($row['name']);
     }
 
     /**
@@ -461,7 +484,6 @@ class gitbook {
 
         $sleep = 0;
         $id = filter_var($_GET['id'], FILTER_VALIDATE_INT);
-
         if (!user::ownID('gitrepo', $id, session::getUserId())) {
             echo lang::translate("You can not perform any action on this page.");
             die();
@@ -479,9 +501,9 @@ class gitbook {
 
         // get parse options from git repos YAML
         $options = $this->yamlAsAry($id);
-        
         // always update title if found
         $bean = db_rb::getBean('gitrepo', 'id', $id);
+        //print_r($bean); die;
         $bean->title = $options['title'];
         R::store($bean);
 
@@ -719,8 +741,10 @@ EOF;
      * @return array $values yaml as array
      */
     public function yamlAsAry($id) {
+        
         $yaml = new Parser();
         $file = $this->fileRepoPath($id, 'file') . "/meta.yaml";
+        
         if (file_exists($file)) {
             $values = $yaml->parse(file_get_contents($file));
         } else {
@@ -996,7 +1020,7 @@ EOF;
      * @return boolean
      */
     public function isRepo($row) {
-        $repo_path = $this->checkoutPath($row['repo']);
+        $repo_path = $this->checkoutPath($row);
         $repo = $repo_path . "/$row[name]/.git";
         if (file_exists($repo)) {
             return true;
@@ -1033,7 +1057,7 @@ EOF;
      * @return int $res
      */
     public function execClone($row) {
-        $clone_path = $this->checkoutPath($row['repo']);
+        $clone_path = $this->checkoutPath($row);
         $command = "cd $clone_path && git clone $row[repo]";
         exec($command, $output, $res);
         if ($res) {
@@ -1048,7 +1072,7 @@ EOF;
      * @return int $res result of exec
      */
     public function checkout($row) {
-        $checkout_path = $this->checkoutPath($row['repo']);
+        $checkout_path = $this->checkoutPath($row);
         $checkout_path.= "/$row[name]";
         $command = "cd $checkout_path && git pull";
         exec($command, $output, $res);
@@ -1065,7 +1089,7 @@ EOF;
      */
     public function checkoutPath($repo) {
 
-        $path = _COS_PATH . "/private/gitbook/" . session::getUserId();
+        $path = _COS_PATH . "/private/gitbook/" . $repo['id'];
         if (!file_exists($path)) {
             mkdir($path, 0777, true);
         }
@@ -1073,29 +1097,44 @@ EOF;
     }  
     
     public function read () {
-        //http_send_content_disposition("document.pdf", true);
-        //http_send_content_type("application/pdf");
-        //http_throttle(0.1, 2048);
-        //http_send_file("../report.pdf");
+        
+        // get repo id
+        $id = direct::fragment(1);
+        $repo = $this->get(array('published =' => 1, 'id =' => $id));
+        if (empty($repo)) {
+            moduleloader::setStatus(404);
+            return false;
+        }
+        
+        // check correct url
+        $canon = $this->exportsDirBook($repo);
+        http::permMovedHeader($canon);
+        
+        // increment
+        $c = new count_module();
+        $c->increment('gitrepo', 'hits', $id);
+        
+        // set meta info
+        $ary = $this->yamlAsAry($id);
+        echo html::getHeadline(html::specialEncode($ary['title']));
+        echo html::specialEncode($ary['Subtitle']);
+        $this->setMeta($ary);
+        template::setTitle($ary['title']);
         
         
-        
-        buffer::cleanAll();
-        
-        http_send_content_disposition("wolf.avi", true);
-        http_send_content_type("application/x-troff-msvideo");
-        http_throttle(1, 20480000);
-        http_send_file(_COS_HTDOCS . "/test/wolf.avi");
-        die;
-        //echo ob_get_level();
-        $ary = $this->exportsArray(21, array ('path' => true));
+        $ary = $this->exportsArray($id, array ('path' => true));
         $path = _COS_HTDOCS . "/$ary[html]";
-        //filereecho $ary['html'];
-        readfile($path);
-        echo "hello world";
-        die;
+        echo file_get_contents($path);
+
+    }
+    
+    public function setMeta ($ary) {
+        template_meta::setMeta(
+                array ('description' => $ary['description'],
+                       'keywords' => 'test'. $ary['keywords']));
     }
 }
 
+        
 
 class gitbook_module extends gitbook{}
