@@ -1,6 +1,7 @@
 <?php
 
 use Symfony\Component\Yaml\Parser;
+use Symfony\Component\Yaml\Dumper;
 use Symfony\Component\Filesystem\Filesystem;
 use diversen\valid;
 use diversen\db\rb as db_rb;
@@ -498,28 +499,12 @@ class gitbook {
         }
 
         sleep($sleep);
-
-        // get parse options from git repos YAML
-        $options = $this->yamlAsAry($id);
         
-        // change case as there is a 'bug' in pandoc regarding 'Subtitle'
-        $options = array_change_key_case($options);
-        // always update title if found
-        $bean = db_rb::getBean('gitrepo', 'id', $id);
-        
-        $bean->subtitle = $options['subtitle'];
-        //$bean->author = $options['author'];
-        $bean->title = $options['title'];
-        R::store($bean);
-
-        // get export formats
-        $formats = $this->exportFormatsReal($options['format-arguments']);
-
         // remove old builds
         $public_path = $this->exportsDir($id);
         file::rrmdir($public_path);
         
-        // export all md files to single file
+        // create a single file with yaml and markdown
         $md_file = $this->mdAllFile($id);
         $str = $this->filesAsStr($id);
         $write_res = file_put_contents($md_file, $str);
@@ -527,6 +512,19 @@ class gitbook {
             echo lang::translate('Could not write to file system ') . "<br />";
             die();
         }
+        
+        // get parse options from git repos YAML
+        $options = $this->yamlAsAry($id);
+        
+        $bean = db_rb::getBean('gitrepo', 'id', $id);
+        $bean->subtitle = $options['Subtitle'];
+        $bean->title = $options['title'];
+        R::store($bean);
+
+        // get export formats
+        $formats = $this->exportFormatsReal($options['format-arguments']);
+
+        
         
         $exports = array ();
         
@@ -716,27 +714,44 @@ class gitbook {
     }
 
     /**
-     * some default options when meta.yaml is not supplied.
-     * @return string $str defauly yaml options
+     * get yaml default string
+     * @return string $str
      */
-    public function yamlDefault() {
+    public function yamlDefaultStr () {
+        $date = date::getDateNow();
+        $cover = config::getModulePath('gitbook') . "/images/cover.jpg";
+        $template = config::getModulePath('gitbook') . "/templates/body.html";
+        
         $str = <<<EOF
 ---
 title: Untitled
-Subtitle: Author has not added a subtitle yet                
+Subtitle: Author has not added a subtitle yet
 subject: Not known
-author: John Doe 
+author:
+- John Doe
+- And others
 keywords: ebooks, pandoc, pdf, html, epub, mobi
 rights: Creative Commons Non-Commercial Share Alike 3.0
 language: en-US
+cover-image: {$cover}
+date: '{$date}'
 # default formats
 format-arguments:
-    pdf: -s -S --latex-engine=pdflatex --number-sections --toc
-    html: -s -S --chapters --number-sections --toc -t html5
+    pdf: --toc
+    html: -s -S --template={$template} --chapters --number-sections --toc
     epub: -s -S  --epub-chapter-level=3 --number-sections --toc
-    mobi: 
+    mobi:
 ...
 EOF;
+        return $str;
+    }
+                
+    /**
+     * some default options when meta.yaml is not supplied.
+     * @return string $str defauly yaml options
+     */
+    public function yamlDefaultAry() {
+        $str = $this->yamlDefaultStr();
         $yaml = new Parser();
         return $yaml->parse($str);
     }
@@ -753,10 +768,27 @@ EOF;
         
         if (file_exists($file)) {
             $values = $yaml->parse(file_get_contents($file));
+            $values = $this->yamlFix($values);
         } else {
-            $values = $this->yamlDefault();
+            $values = $this->yamlDefaultAry();
         }
         return $values;
+    }
+    
+    /**
+     * if any of the values is missing in meta.yaml
+     * we insert default values
+     * @param type $values
+     * @return type
+     */
+    public function yamlFix ($values) {
+        $default = $this->yamlDefaultAry();
+        foreach ($default as $key => $val) {
+            if (isset($values[$key])) {
+                $default[$key] = $values[$key];
+            }
+        }
+        return $default;
     }
 
     /**
@@ -775,16 +807,27 @@ EOF;
      * @param type $id
      * @return string|boolean
      */
-    public function filesAsStr($id, $options = array('encode' => true)) {
+    public function filesAsStr($id) {
 
         $yaml = $this->yamlAsAry($id);
-        $repo_path = $this->fileRepoPath($id, 'file', $yaml);
+        $repo_path = $this->fileRepoPath($id, 'file');
 
-        $files = $this->getFilesAry($repo_path, "/*.md", $yaml);
+        $files = $this->getFilesAry($repo_path, "/*.md");
         if (empty($files)) {
             return false;
         }
+        
+        $exports_dir = $this->exportsDir($id);
         $files_str = '';
+        
+        // set meta yaml part
+        $yaml_file = $exports_dir . "/meta.yaml";
+        if (file_exists($yaml_file)) {
+            $files_str.= file_get_contents($yaml_file) . "\n\n";
+        } else {
+            $files_str.= $this->yamlDefaultStr() . "\n\n";    
+        }
+        
         foreach ($files as $file) {
             $files_str.= file_get_contents($file) . "\n";
         }
@@ -806,8 +849,9 @@ EOF;
                 if (!$ok) {
                     return false;
                 }
+                //$o[$type] = 
                 $o[$type].= $this->pandocAddArgs($id, $type);
-                return $o[$type];
+                return $o[$type];//$o[$type];
             }
         }
         return "-s -S --chapters --self-contained --number-sections --toc ";
@@ -935,11 +979,7 @@ EOF;
             return $ret;
     
         }
-        if (!isset($options['cover-image'])) {
-            $e = lang::translate('Epub fails! Mobi has no cover image. Specify this in a meta.yaml file');
-            $this->errors[] = $e;
-            return false;
-        }
+
 
         $repo = $this->get($id);
         $export_dir = $this->exportsDir($id);
@@ -988,6 +1028,7 @@ EOF;
 
         // add base flags
         $base_flags = $this->pandocArgs($id, $type, $options);
+        $base_flags = escapeshellcmd($base_flags);
         if (!$base_flags) {
             echo html::getErrors($this->errors);
             die;
@@ -995,11 +1036,7 @@ EOF;
 
         $command.= "pandoc $base_flags ";
         $command.= "-o $export_file ";
-        $title_file = $repo_path . "/meta.yaml";
-        if (file_exists($title_file)) {
-            $command.= $title_file . " ";
-        }
-
+        
         $files_str = $this->mdAllFile($id);
         if ($files_str === false) {
             echo lang::translate("Error. You will need to have .md files written in markdown in your repo. No such files found!");
