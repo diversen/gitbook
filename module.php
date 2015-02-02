@@ -8,7 +8,7 @@ use diversen\html;
 use diversen\html\helpers as html_helpers;
 use diversen\cli\optValid;
 //use diversen\pagination;
-use diversen\buffer;
+//use diversen\buffer;
 use diversen\uri\direct;
 //use diversen\file\string as file_string;
 
@@ -501,9 +501,14 @@ class gitbook {
 
         // get parse options from git repos YAML
         $options = $this->yamlAsAry($id);
+        
+        // change case as there is a 'bug' in pandoc regarding 'Subtitle'
+        $options = array_change_key_case($options);
         // always update title if found
         $bean = db_rb::getBean('gitrepo', 'id', $id);
-        //print_r($bean); die;
+        
+        $bean->subtitle = $options['subtitle'];
+        //$bean->author = $options['author'];
         $bean->title = $options['title'];
         R::store($bean);
 
@@ -718,8 +723,9 @@ class gitbook {
         $str = <<<EOF
 ---
 title: Untitled
+Subtitle: Author has not added a subtitle yet                
 subject: Not known
-author: John Doe
+author: John Doe 
 keywords: ebooks, pandoc, pdf, html, epub, mobi
 rights: Creative Commons Non-Commercial Share Alike 3.0
 language: en-US
@@ -1115,22 +1121,30 @@ EOF;
         $c->increment('gitrepo', 'hits', $id);
         
         // set meta info
-        $ary = $this->yamlAsAry($id);
-        echo html::getHeadline(html::specialEncode($ary['title']));
-        echo html::specialEncode($ary['Subtitle']);
-        $this->setMeta($ary);
-        template::setTitle($ary['title']);
+        $yaml = $this->yamlAsAry($id);
+        echo html::getHeadline(html::specialEncode($yaml['title']));
+        echo html::specialEncode($yaml['Subtitle']) . "<br />";
+        
+        $p = new userinfo_module();
+        $pro = lang::translate('Edited by: ');
+        echo $pro.= $p->getProfileLink($repo['user_id']);
         
         
-        $ary = $this->exportsArray($id, array ('path' => true));
-        $path = _COS_HTDOCS . "/$ary[html]";
+        print_r($yaml['author']);
+        
+        $this->setMeta($yaml);
+        template::setTitle($yaml['title']);
+        
+        // get html fragment
+        $exports = $this->exportsArray($id, array ('path' => true));
+        $path = _COS_HTDOCS . "/$exports[html]";
         echo file_get_contents($path);
 
     }
     
     public function setMeta ($ary) {
         template_meta::setMeta(
-                array ('description' => $ary['description'],
+                array ('description' => $ary['Subtitle'],
                        'keywords' => 'test'. $ary['keywords']));
     }
 }

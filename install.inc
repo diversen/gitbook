@@ -19,3 +19,5 @@ $_INSTALL['ROUTES'][] = array ('#/books/[0-9]#'=>
            'controller' => '/gitbook/read')
 );
 
+$_INSTALL['PUBLIC_CLONE_URL'] = "git://github.com/diversen/gitbook.git";
+$_INSTALL['PRIVATE_CLONE_URL'] = 'git@github.com:diversen/gitbook.git';

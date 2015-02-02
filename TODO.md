@@ -6,7 +6,7 @@ Order repos from hits
 //Two kind of delete repos
 share on html page
 //Error: first checkout .git and then without .git two repos added.
-user profile
+// user profile
 counter 
 setup email
 public display of repos
