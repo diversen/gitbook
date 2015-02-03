@@ -23,14 +23,15 @@ $_COS_LANG_MODULE['Could not move all HTML assets'] = 'Could not move all HTML a
 $_COS_LANG_MODULE['You have a file in your css path which is not allowed. Found file: '] = 'You have a file in your css path which is not allowed. Found file: ';
 $_COS_LANG_MODULE['Found illigal options in <span class="notranslate"><b>format-arguments</b></span>: '] = 'Found illigal options in <span class="notranslate"><b>format-arguments</b></span>: ';
 $_COS_LANG_MODULE['Remove it from <b>meta.yaml</b>'] = 'Remove it from <b>meta.yaml</b>';
-$_COS_LANG_MODULE['Epub fails! Mobi has no cover image. Specify this in a meta.yaml file'] = 'Epub fails! Mobi has no cover image. Specify this in a meta.yaml file';
+$_COS_LANG_MODULE['You will need to have a title and a cover image when creating MOBI files from Epub files'] = 'You will need to have a title and a cover image when creating MOBI files from Epub files';
 $_COS_LANG_MODULE['Done '] = 'Done ';
+$_COS_LANG_MODULE['Repo URL: '] = 'Repo URL: ';
+$_COS_LANG_MODULE['Edited by: '] = 'Edited by: ';
 $_COS_LANG_MODULE['Add a git repo'] = 'Add a git repo';
 $_COS_LANG_MODULE['Wait while generating site. This may take a minute or two'] = 'Wait while generating site. This may take a minute or two';
 $_COS_LANG_MODULE['You can not perform any action on this page.'] = 'You can not perform any action on this page.';
 $_COS_LANG_MODULE['If no error were reported, you exports has been generated. '] = 'If no error were reported, you exports has been generated. ';
 $_COS_LANG_MODULE['Remove it from your repo with: git rm -f '] = 'Remove it from your repo with: git rm -f ';
 $_COS_LANG_MODULE['in type '] = 'in type ';
-$_COS_LANG_MODULE['Kindle failed'] = 'Kindle failed';
 $_COS_LANG_MODULE['Error. You will need to have .md files written in markdown in your repo. No such files found!'] = 'Error. You will need to have .md files written in markdown in your repo. No such files found!';
 $_COS_LANG_MODULE['Failed to create export of type: '] = 'Failed to create export of type: ';

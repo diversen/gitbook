@@ -99,9 +99,8 @@ class gitbook {
         $row = html::specialEncode($row);
         $str = '';
         
-        $url = $this->exportsDirWeb($row['id']) . "/" . $row['name'];
-        $str.= html::createLink($url, html::getHeadline($row['title']));
-        $str.= html::createLink($row['repo'], $row['repo']) . "<br />";
+        $str.=$this->viewHeaderCommon($row);
+        
         $str.= $this->optionsRepo($row);
         $str.= MENU_SUB_SEPARATOR_SEC;
 
@@ -160,14 +159,14 @@ class gitbook {
 
         if (isset($_POST['delete_files'])) {
             $this->deletePublicFiles($_GET['id']);
-            $this->deleteRepoFiles($_GET['id']);
+            $this->repoDeleteFiles($_GET['id']);
             $this->updateRow($_GET['id'], array('published' => 0));
             http::locationHeader('/gitbook/repos', lang::translate('Repo files has been purged!'));
         }
         
         if (isset($_POST['delete_all'])) {
             $this->deletePublicFiles($_GET['id']);
-            $this->deleteRepoFiles($_GET['id']);
+            $this->repoDeleteFiles($_GET['id']);
             $this->deleteRow($_GET['id']);
             http::locationHeader('/gitbook/repos', lang::translate('Repo files has been purged. Database entry has been removed!'));
         }
@@ -192,8 +191,8 @@ class gitbook {
      * delete repo files from id
      * @param int $id
      */
-    public function deleteRepoFiles ($id) {
-        $private_path = $this->fileRepoPath($id, 'file');
+    public function repoDeleteFiles ($id) {
+        $private_path = $this->repoPath($id);
         file::rrmdir($private_path);        
     }
     
@@ -314,18 +313,14 @@ class gitbook {
      * @param string $type controller or file
      * @return string
      */
-    public function fileRepoPath($id, $type = 'file', $options = array()) {
+    public function repoPath($id) {
 
         $repo = $this->get($id);
         $path = $this->repoName($repo['repo']);
 
-        if (isset($options['docs-folder'])) {
-            $path.= "/" . $options['docs-folder'];
-        }
-
-        if ($type == 'file') {
+        //if ($type == 'file') {
             $path = _COS_PATH . "/private/gitbook/$id" . "/$path";
-        }
+        //}
         return $path;
     }
     
@@ -554,7 +549,7 @@ class gitbook {
 
         // docbook
         if (in_array('docbook', $formats)) {
-            $docbook_ok = $this->pandocCommand($id, 'db', $options);
+            $docbook_ok = $this->pandocCommand($id, 'docbook', $options);
             if (!$docbook_ok) {
                 $exports[] = 'docbook';
             }
@@ -653,7 +648,7 @@ class gitbook {
         $repo = $this->get($id);
 
         // move to dir
-        $repo_path = $this->repoPath($repo);
+        $repo_path = $this->repoPath($id);
         $export_path = $this->exportsDir($id);
 
         $css_path = $repo_path . "/css";
@@ -708,10 +703,11 @@ class gitbook {
      * @param array $repo
      * @return string $path repo path
      */
+    /*
     public function repoPath($repo) {
         $checkout = $this->checkoutPath($repo);
         return $checkout . "/$repo[name]";
-    }
+    }*/
 
     /**
      * get yaml default string
@@ -764,7 +760,7 @@ EOF;
     public function yamlAsAry($id) {
         
         $yaml = new Parser();
-        $file = $this->fileRepoPath($id, 'file') . "/meta.yaml";
+        $file = $this->repoPath($id) . "/meta.yaml";
         
         if (file_exists($file)) {
             $values = $yaml->parse(file_get_contents($file));
@@ -810,14 +806,16 @@ EOF;
     public function filesAsStr($id) {
 
         $yaml = $this->yamlAsAry($id);
-        $repo_path = $this->fileRepoPath($id, 'file');
+        $repo_path = $this->repoPath($id);
 
+        
         $files = $this->getFilesAry($repo_path, "/*.md");
         if (empty($files)) {
             return false;
         }
         
-        $exports_dir = $this->exportsDir($id);
+        //$repo = $this->get($id);
+        $exports_dir = $this->repoPath($id);
         $files_str = '';
         
         // set meta yaml part
@@ -868,10 +866,14 @@ EOF;
         if ($type == 'html') {
             
             // add menu with downloads in html header
-            $export_dir = $this->exportsDirFull($id);
+            // $export_dir = $this->exportsDirFull($id);
             // $export_file = "$export_dir/header.html";
             // $str.= " --include-before-body=$export_file -t html5 ";
             $str.= " -t html5 ";
+        }
+        
+        if ($type == 'docbook') {
+            $str.= " -t docbook ";
         }
         
         if ($type == 'pdf') {
@@ -980,7 +982,6 @@ EOF;
     
         }
 
-
         $repo = $this->get($id);
         $export_dir = $this->exportsDir($id);
 
@@ -992,8 +993,9 @@ EOF;
 
         exec($command, $output, $ret);
         if ($ret) {
+            $error = lang::translate('You will need to have a title and a cover image when creating MOBI files from Epub files');
+            echo html::getError($error);
             log::error($command);
-            echo lang::translate("Kindle failed") . "<br />";
             return $ret;
         }
         echo lang::translate('Done ') . "Mobi<br/>";
@@ -1021,7 +1023,7 @@ EOF;
         $export_file = $this->exportsDirFull($id) . "/$repo_name.$type";
 
         // get repo path
-        $repo_path = $this->fileRepoPath($id, 'file');
+        $repo_path = $this->repoPath($id);
 
         // begin command
         $command = "cd $repo_path && ";
@@ -1063,7 +1065,7 @@ EOF;
      * @return boolean
      */
     public function isRepo($row) {
-        $repo_path = $this->checkoutPath($row);
+        $repo_path = $this->repoCheckoutPath($row);
         $repo = $repo_path . "/$row[name]/.git";
         if (file_exists($repo)) {
             return true;
@@ -1100,7 +1102,7 @@ EOF;
      * @return int $res
      */
     public function execClone($row) {
-        $clone_path = $this->checkoutPath($row);
+        $clone_path = $this->repoCheckoutPath($row);
         $command = "cd $clone_path && git clone $row[repo]";
         exec($command, $output, $res);
         if ($res) {
@@ -1115,7 +1117,7 @@ EOF;
      * @return int $res result of exec
      */
     public function checkout($row) {
-        $checkout_path = $this->checkoutPath($row);
+        $checkout_path = $this->repoCheckoutPath($row);
         $checkout_path.= "/$row[name]";
         $command = "cd $checkout_path && git pull";
         exec($command, $output, $res);
@@ -1126,11 +1128,11 @@ EOF;
     }
 
     /**
-     * get repo file path from repo name
+     * get place where we checkout repo
      * @param string $repo
      * @return string $path
      */
-    public function checkoutPath($repo) {
+    public function repoCheckoutPath($repo) {
 
         $path = _COS_PATH . "/private/gitbook/" . $repo['id'];
         if (!file_exists($path)) {
@@ -1139,7 +1141,7 @@ EOF;
         return $path;
     }  
     
-    public function read () {
+    public function booksAction () {
         
         // get repo id
         $id = direct::fragment(1);
@@ -1159,12 +1161,10 @@ EOF;
         
         // set meta info
         $yaml = $this->yamlAsAry($id);
-        echo html::getHeadline(html::specialEncode($yaml['title']));
-        echo html::specialEncode($yaml['Subtitle']) . "<br />";
         
-        $p = new userinfo_module();
-        $pro = lang::translate('Edited by: ');
-        echo $pro.= $p->getProfileLink($repo['user_id']);
+        $repo = html::specialEncode($repo);
+        echo $this->viewHeaderCommon($repo);
+        
         
         
         print_r($yaml['author']);
@@ -1177,6 +1177,21 @@ EOF;
         $path = _COS_HTDOCS . "/$exports[html]";
         echo file_get_contents($path);
 
+    }
+    
+    public function viewHeaderCommon ($repo) {
+        
+        $url = $this->exportsDirWeb($repo['id']) . "/" . $repo['name'];
+        $str = '';
+        $str.= html::createLink($url, html::getHeadline($repo['title']));
+        $str.= $repo['subtitle'] . "<br />";
+        $str.= lang::translate('Repo URL: '); 
+        $str.= html::createLink($repo['repo'], $repo['repo']) . "<br />";
+       
+        $p = new userinfo_module();
+        $str.= lang::translate('Edited by: ');
+        $str.= $p->getProfileLink($repo['user_id']) . "<br />";
+        return $str;
     }
     
     public function setMeta ($ary) {

@@ -14,9 +14,9 @@ $_INSTALL['MAIN_MENU_ITEM'] = array (
 );
 
 $_INSTALL['ROUTES'][] = array ('#/books/[0-9]#'=>
-    array ('method' => 'gitbook::read',
+    array ('method' => 'gitbook::booksAction',
            'module' => 'gitbook',
-           'controller' => '/gitbook/read')
+           'controller' => '/gitbook/books')
 );
 
 $_INSTALL['PUBLIC_CLONE_URL'] = "git://github.com/diversen/gitbook.git";
