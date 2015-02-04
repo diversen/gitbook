@@ -1,5 +1,9 @@
 <?php
 
+
+$vendor = dirname(__FILE__) . "/vendor";
+require "$vendor/autoload.php";
+
 use Symfony\Component\Yaml\Parser;
 use Symfony\Component\Yaml\Dumper;
 use Symfony\Component\Filesystem\Filesystem;
@@ -11,10 +15,21 @@ use diversen\cli\optValid;
 //use diversen\pagination;
 //use diversen\buffer;
 use diversen\uri\direct;
+use Gregwar\Image\Image;
 //use diversen\file\string as file_string;
 
 class gitbook {
 
+    public function testAction () {
+        $save = _COS_HTDOCS . "/files/cover.jpg";
+
+       $image = config::getModulePath('gitbook') . "/images/cover.jpg";
+    Image::open($image)
+    ->resize(100, 100)
+    ->negate()
+    ->save($save);
+    }
+    
     /**
      * connect to database
      */
@@ -805,21 +820,35 @@ EOF;
      */
     public function filesAsStr($id) {
 
-        $yaml = $this->yamlAsAry($id);
-        $repo_path = $this->repoPath($id);
-
-        
+        $repo_path = $this->repoPath($id);        
         $files = $this->getFilesAry($repo_path, "/*.md");
         if (empty($files)) {
             return false;
         }
         
         //$repo = $this->get($id);
-        $exports_dir = $this->repoPath($id);
+        $repo_dir = $this->repoPath($id);
         $files_str = '';
         
         // set meta yaml part
-        $yaml_file = $exports_dir . "/meta.yaml";
+        $yaml_file = $repo_dir . "/meta.yaml";
+        
+        
+        $yaml = $this->yamlAsAry($id);
+        $dumper = new Dumper();
+        $str = $dumper->dump($yaml, 2);
+        //die;
+        //e//cho "$str . 
+        
+        $str = "---\n" . $str . "...\n\n\n";
+        
+        $yaml_file = $this->exportsDir($id) . "/meta.yaml";
+        file_put_contents($yaml_file, $str);
+        //die;
+        
+        //$default = $this->yamlFix($values)
+        //echo $dumper->dump($array, 2);
+        
         if (file_exists($yaml_file)) {
             $files_str.= file_get_contents($yaml_file) . "\n\n";
         } else {
@@ -830,6 +859,10 @@ EOF;
             $files_str.= file_get_contents($file) . "\n";
         }
         return $files_str;
+    }
+    
+    public function yamlMergeDefault () {
+        
     }
 
     /**
@@ -1161,6 +1194,11 @@ EOF;
         
         // set meta info
         $yaml = $this->yamlAsAry($id);
+        
+        if (isset($yaml['language'])) {
+            config::setMainIni('lang', $yaml['language']);
+            // lang::loadLanguage('zh');
+        }
         
         $repo = html::specialEncode($repo);
         echo $this->viewHeaderCommon($repo);
