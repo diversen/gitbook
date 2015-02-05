@@ -7,8 +7,9 @@ Order repos from hits
 share on html page
 //Error: first checkout .git and then without .git two repos added.
 // user profile
-counter 
+//counter 
 setup email
-public display of repos
+[No cover image]
+//public display of repos
 scale images
 meta tags title etc

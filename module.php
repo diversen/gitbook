@@ -23,11 +23,50 @@ class gitbook {
     public function testAction () {
         $save = _COS_HTDOCS . "/files/cover.jpg";
 
-       $image = config::getModulePath('gitbook') . "/images/cover.jpg";
-    Image::open($image)
-    ->resize(100, 100)
-    ->negate()
-    ->save($save);
+        $font = _COS_HTDOCS . "/fonts/captcha.ttf";
+        $image = config::getModulePath('gitbook') . "/images/white.jpg";
+        
+        // ration 600 x 800
+        $text = "Her er en noget længere tekst";
+        
+        //$text.= $text . $text;
+        Image::open($image)
+            ->resize(600, 800)
+            //->write($font, $text, 150, 150, 20, 0, '#000', 'left')
+            ->save($save);
+    }
+    
+    /**
+     * will generate a cover image for epub and mobi files if it has not 
+     * it also rewrite yaml
+     * be supplied
+     */
+    public function coverGenerate ($id, $yaml) {
+        $save = _COS_HTDOCS . "/books/$id/cover.jpg";
+
+        $font = _COS_HTDOCS . "/fonts/captcha.ttf";
+        $image = config::getModulePath('gitbook') . "/images/cover.jpg";
+        
+        // ration 600 x 800
+        $title = mb_substr($yaml['title'], 0 , 25);
+        
+        
+        $img = Image::open($image);
+            //->font title       left top fs   angel
+        $img->write($font, $title, 20, 500, 80, 0, '#0066cc', 'left');
+        $written_by = lang::translate('Written by: ');
+        $img->write($font, $written_by, 20, 1000, 40, 0, '#333', 'left');
+        
+        
+        $img->save($save);
+        
+        $yaml['cover-image'] = $save;
+        die;
+        return $yaml;
+    }
+    
+    public function coverScale ($id) {
+        
     }
     
     /**
@@ -514,6 +553,25 @@ class gitbook {
         $public_path = $this->exportsDir($id);
         file::rrmdir($public_path);
         
+        //$cover_res = $this->coverGenerate($id);
+        $yaml = $this->yamlAsAry($id);
+        $cover_default = config::getModulePath('gitbook') . "/images/cover.jpg";
+        
+        // There has not been set a cover
+        if ($yaml['cover-image'] == $cover_default) {
+            $yaml = $this->coverGenerate($id, $yaml);
+        }
+        
+        //print_r($yaml); die;
+        
+        // generate yaml meta in exports
+        $yaml_res = $this->yamlExportsMeta($id, $yaml);
+        if (!$yaml_res) {
+            echo html::getError('Could not write to filesystem. If you are admin you should fix this.');
+        }
+        
+        
+        
         // create a single file with yaml and markdown
         $md_file = $this->mdAllFile($id);
         $str = $this->filesAsStr($id);
@@ -540,6 +598,9 @@ class gitbook {
         
         // epub
         if (in_array('epub', $formats)) {
+            
+            
+            
             $epub_ok = $this->pandocCommand($id, 'epub', $options);
             if (!$epub_ok) {
                 $exports[] = 'epub';
@@ -714,17 +775,6 @@ class gitbook {
     }
 
     /**
-     * get complete repo path from checkout path and repo name
-     * @param array $repo
-     * @return string $path repo path
-     */
-    /*
-    public function repoPath($repo) {
-        $checkout = $this->checkoutPath($repo);
-        return $checkout . "/$repo[name]";
-    }*/
-
-    /**
      * get yaml default string
      * @return string $str
      */
@@ -732,7 +782,6 @@ class gitbook {
         $date = date::getDateNow();
         $cover = config::getModulePath('gitbook') . "/images/cover.jpg";
         $template = config::getModulePath('gitbook') . "/templates/body.html";
-        
         $str = <<<EOF
 ---
 title: Untitled
@@ -808,6 +857,9 @@ EOF;
      * @return type
      */
     public function exportsDir($id) {
+        if (!$id) {
+            die('exportsDir() function should always get and ID ');
+        }
         $exports_dir = _COS_HTDOCS . "/books/$id";
         file::mkdirDirect($exports_dir);
         return $exports_dir;
@@ -825,34 +877,11 @@ EOF;
         if (empty($files)) {
             return false;
         }
-        
-        //$repo = $this->get($id);
-        $repo_dir = $this->repoPath($id);
+
         $files_str = '';
-        
-        // set meta yaml part
-        $yaml_file = $repo_dir . "/meta.yaml";
-        
-        
-        $yaml = $this->yamlAsAry($id);
-        $dumper = new Dumper();
-        $str = $dumper->dump($yaml, 2);
-        //die;
-        //e//cho "$str . 
-        
-        $str = "---\n" . $str . "...\n\n\n";
-        
         $yaml_file = $this->exportsDir($id) . "/meta.yaml";
-        file_put_contents($yaml_file, $str);
-        //die;
-        
-        //$default = $this->yamlFix($values)
-        //echo $dumper->dump($array, 2);
-        
         if (file_exists($yaml_file)) {
             $files_str.= file_get_contents($yaml_file) . "\n\n";
-        } else {
-            $files_str.= $this->yamlDefaultStr() . "\n\n";    
         }
         
         foreach ($files as $file) {
@@ -861,8 +890,18 @@ EOF;
         return $files_str;
     }
     
-    public function yamlMergeDefault () {
-        
+    /**
+     * generates a yaml file and place it in export dir
+     * @param int $id repo id
+     * @return boolean $res 
+     */
+    public function yamlExportsMeta ($id, $yaml) {
+        //$yaml = $this->yamlAsAry($id);
+        $dumper = new Dumper();
+        $str = $dumper->dump($yaml, 2);        
+        $str = "---\n" . $str . "...\n\n\n";
+        $yaml_file = $this->exportsDir($id) . "/meta.yaml";
+        return file_put_contents($yaml_file, $str);
     }
 
     /**
@@ -1041,7 +1080,7 @@ EOF;
         return $export_dir_full;
     }
     /**
-     * 
+     * runs a pandoc command based on repo id 'type' ,e.g. epub, and options
      * @param repo $id
      * @param string $type pdf, mobi, epub, etc. 
      * @param array $options
