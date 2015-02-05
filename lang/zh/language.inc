@@ -1,16 +1,19 @@
 <?php
 
+$_COS_LANG_MODULE['Written by: '] = '撰稿：';
+$_COS_LANG_MODULE['Exports: '] = '出口：';
 $_COS_LANG_MODULE['Delete'] = '删除';
 $_COS_LANG_MODULE['Checkout'] = '结帐';
-$_COS_LANG_MODULE['Repo has been deleted'] = '回购已被删除';
-$_COS_LANG_MODULE['Confirm removal of repo'] = '确认删除回购';
+$_COS_LANG_MODULE['Repo files has been purged!'] = '回购的文件已被清除！';
+$_COS_LANG_MODULE['Repo files has been purged. Database entry has been removed!'] = '回购的文件已被清除。数据库条目已被删除！';
+$_COS_LANG_MODULE['Remove git repo and exported files - but leave repo in database'] = '删除混帐回购和导出的文件 - 但留下回购数据库';
+$_COS_LANG_MODULE['Remove everything. Be carefull as any links to this repo no longer will be found!'] = '删除一切。要小心，以这种回购的任何链接不再会被发现！';
 $_COS_LANG_MODULE['Enter repo URL (http|https)'] = '进入回购网址（HTTP | HTTPS）';
 $_COS_LANG_MODULE['Add'] = '添加';
 $_COS_LANG_MODULE['Not a correct repo URL'] = '不正确的URL回购';
 $_COS_LANG_MODULE['Repo already exists'] = '回购已存在';
 $_COS_LANG_MODULE['URL does not seem to be a git repo. If you know this is a git repo, please try again.'] = 'URL似乎并没有成为一个git的回购。如果你知道这是一个git的回购，请重试。';
 $_COS_LANG_MODULE['Will now checkout repo'] = '现在将签回购';
-$_COS_LANG_MODULE['Exports: '] = '出口：';
 $_COS_LANG_MODULE['Fetching repo '] = '取回购';
 $_COS_LANG_MODULE['Could not checkout repo. Somethings went wrong. Try again later'] = '无法结帐回购。有些事情出了问题。请稍后再试';
 $_COS_LANG_MODULE['Could not write to file system '] = '无法写入文件系统';
@@ -18,10 +21,13 @@ $_COS_LANG_MODULE['Could not move all HTML assets'] = '动弹不得全部HTML资
 $_COS_LANG_MODULE['You have a file in your css path which is not allowed. Found file: '] = '你有你的CSS路径的文件，这是不允许的。找到的文件：';
 $_COS_LANG_MODULE['Found illigal options in <span class="notranslate"><b>format-arguments</b></span>: '] = '发现illigal选项<b><span class="notranslate">format-arguments</span></b> ：';
 $_COS_LANG_MODULE['Remove it from <b>meta.yaml</b>'] = '从<b>meta.yaml</b>删除它';
-$_COS_LANG_MODULE['Epub fails! Mobi has no cover image. Specify this in a meta.yaml file'] = 'EPUB失败！摩比没有封面图片。在meta.yaml文件中指定该';
+$_COS_LANG_MODULE['You will need to have a title and a cover image when creating MOBI files from Epub files'] = '您将需要从EPUB文件创建MOBI文件时有一个标题和封面图片';
 $_COS_LANG_MODULE['Done '] = 'DONE';
+$_COS_LANG_MODULE['Repo URL: '] = '回购网址：';
+$_COS_LANG_MODULE['Edited by: '] = '编辑按：';
 $_COS_LANG_MODULE['Add a git repo'] = '添加一个git仓库';
 $_COS_LANG_MODULE['Wait while generating site. This may take a minute or two'] = '稍候，生成网站。这可能需要一两分钟';
+$_COS_LANG_MODULE['You can not perform any action on this page.'] = '你不能执行此页面上的任何行动。';
 $_COS_LANG_MODULE['If no error were reported, you exports has been generated. '] = '如果没有错误的报道，你的出口已经产生。';
 $_COS_LANG_MODULE['Remove it from your repo with: git rm -f '] = '混帐RM -f：从你的回购与中删除';
 $_COS_LANG_MODULE['in type '] = '类型';

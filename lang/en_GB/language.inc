@@ -3,6 +3,7 @@
 
 // Translation of file /modules/gitbook/module.php
 
+$_COS_LANG_MODULE['Written by: '] = 'Written by: ';
 $_COS_LANG_MODULE['Exports: '] = 'Exports: ';
 $_COS_LANG_MODULE['Delete'] = 'Delete';
 $_COS_LANG_MODULE['Checkout'] = 'Checkout';

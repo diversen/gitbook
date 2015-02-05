@@ -1,16 +1,19 @@
 <?php
 
+$_COS_LANG_MODULE['Written by: '] = 'Skrevet av:';
+$_COS_LANG_MODULE['Exports: '] = 'Eksport:';
 $_COS_LANG_MODULE['Delete'] = 'Slett';
 $_COS_LANG_MODULE['Checkout'] = 'Kassen';
-$_COS_LANG_MODULE['Repo has been deleted'] = 'Repo er slettet';
-$_COS_LANG_MODULE['Confirm removal of repo'] = 'Bekreft fjerning av repo';
+$_COS_LANG_MODULE['Repo files has been purged!'] = 'Repo filer har blitt renset!';
+$_COS_LANG_MODULE['Repo files has been purged. Database entry has been removed!'] = 'Repo filer har blitt renset. Database oppføring har blitt fjernet!';
+$_COS_LANG_MODULE['Remove git repo and exported files - but leave repo in database'] = 'Fjern git repo og eksporterte filer - men la repo i databasen';
+$_COS_LANG_MODULE['Remove everything. Be carefull as any links to this repo no longer will be found!'] = 'Fjern alt. Vær forsiktig så eventuelle koblinger til dette repo ikke lenger vil bli funnet!';
 $_COS_LANG_MODULE['Enter repo URL (http|https)'] = 'Tast repo URL (http | https)';
 $_COS_LANG_MODULE['Add'] = 'Legg';
 $_COS_LANG_MODULE['Not a correct repo URL'] = 'Ikke en korrekt repo URL';
 $_COS_LANG_MODULE['Repo already exists'] = 'Repo allerede eksisterer';
 $_COS_LANG_MODULE['URL does not seem to be a git repo. If you know this is a git repo, please try again.'] = 'URL ser ikke ut til å være en git repo. Hvis du vet at dette er en git repo, prøv igjen.';
 $_COS_LANG_MODULE['Will now checkout repo'] = 'Vil nå kassa repo';
-$_COS_LANG_MODULE['Exports: '] = 'Eksport:';
 $_COS_LANG_MODULE['Fetching repo '] = 'Henter repo';
 $_COS_LANG_MODULE['Could not checkout repo. Somethings went wrong. Try again later'] = 'Kunne ikke kassa repo. Somethings gikk galt. Prøv igjen senere';
 $_COS_LANG_MODULE['Could not write to file system '] = 'Kunne ikke skrive til filsystemet';
@@ -18,10 +21,13 @@ $_COS_LANG_MODULE['Could not move all HTML assets'] = 'Kunne ikke flytte alle HT
 $_COS_LANG_MODULE['You have a file in your css path which is not allowed. Found file: '] = 'Du har en fil i din css sti som ikke er tillatt. Funnet fil:';
 $_COS_LANG_MODULE['Found illigal options in <span class="notranslate"><b>format-arguments</b></span>: '] = 'Funnet illigal alternativer i <b><span class="notranslate">format-arguments</span></b> :';
 $_COS_LANG_MODULE['Remove it from <b>meta.yaml</b>'] = 'Fjerne det fra <b>meta.yaml</b>';
-$_COS_LANG_MODULE['Epub fails! Mobi has no cover image. Specify this in a meta.yaml file'] = 'Epub mislykkes! Mobi har ingen cover bilde. Angi dette i en meta.yaml fil';
+$_COS_LANG_MODULE['You will need to have a title and a cover image when creating MOBI files from Epub files'] = 'Du må ha en tittel og en cover bilde når du oppretter MOBI filer fra ePub-filer';
 $_COS_LANG_MODULE['Done '] = 'Ferdig';
+$_COS_LANG_MODULE['Repo URL: '] = 'Repo URL:';
+$_COS_LANG_MODULE['Edited by: '] = 'Redigert av:';
 $_COS_LANG_MODULE['Add a git repo'] = 'Legg en git repo';
 $_COS_LANG_MODULE['Wait while generating site. This may take a minute or two'] = 'Vent mens generere nettstedet. Dette kan ta et minutt eller to';
+$_COS_LANG_MODULE['You can not perform any action on this page.'] = 'Du kan ikke utføre noen handling på denne siden.';
 $_COS_LANG_MODULE['If no error were reported, you exports has been generated. '] = 'Hvis ingen feil ble rapportert, har dere eksporten blitt generert.';
 $_COS_LANG_MODULE['Remove it from your repo with: git rm -f '] = 'Fjern det fra repo med: git rm -f';
 $_COS_LANG_MODULE['in type '] = 'i type';
