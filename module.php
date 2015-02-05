@@ -61,7 +61,6 @@ class gitbook {
         $img->save($save);
         
         $yaml['cover-image'] = $save;
-        die;
         return $yaml;
     }
     
@@ -561,8 +560,6 @@ class gitbook {
         if ($yaml['cover-image'] == $cover_default) {
             $yaml = $this->coverGenerate($id, $yaml);
         }
-        
-        //print_r($yaml); die;
         
         // generate yaml meta in exports
         $yaml_res = $this->yamlExportsMeta($id, $yaml);
@@ -1213,6 +1210,10 @@ EOF;
         return $path;
     }  
     
+    /**
+     * books action
+     * @return boolean
+     */
     public function booksAction () {
         
         // get repo id
@@ -1231,6 +1232,8 @@ EOF;
         $c = new count_module();
         $c->increment('gitrepo', 'hits', $id);
         
+        
+        
         // set meta info
         $yaml = $this->yamlAsAry($id);
         
@@ -1243,8 +1246,13 @@ EOF;
         echo $this->viewHeaderCommon($repo);
         
         
+        $s = new gitbook_share();
+        echo $s->getShareString($repo['title'], $repo['subtitle']);
         
-        print_r($yaml['author']);
+        //echo $s->get('stackoverflow', $share_opt);
+        
+        
+        //print_r($yaml['author']);
         
         $this->setMeta($yaml);
         template::setTitle($yaml['title']);

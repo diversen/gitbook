@@ -1,6 +1,10 @@
 <?php
 
 
+// Translation of file /modules/gitbook/share.php
+
+$_COS_LANG_MODULE['Share this using: '] = 'Share this using: ';
+
 // Translation of file /modules/gitbook/module.php
 
 $_COS_LANG_MODULE['Written by: '] = 'Written by: ';
