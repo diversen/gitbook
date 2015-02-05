@@ -1267,7 +1267,7 @@ EOF;
        
         $p = new userinfo_module();
         $str.= lang::translate('Edited by: ');
-        $str.= $p->getProfileLink($repo['user_id']) . "<br />";
+        $str.= $p->getLink($repo['user_id']) . "<br />";
         return $str;
     }
     
