@@ -4,7 +4,7 @@
         "Read more about it at http://getcomposer.org/doc/01-basic-usage.md#composer-lock-the-lock-file",
         "This file is @generated automatically"
     ],
-    "hash": "7cf238b8f3bc682fc1a7fe89701bc291",
+    "hash": "94c032ecd2083e868d9270f773d9c254",
     "packages": [
         {
             "name": "gregwar/cache",
@@ -96,6 +96,37 @@
                 "image"
             ],
             "time": "2015-02-03 16:44:33"
+        },
+        {
+            "name": "stil/gd-text",
+            "version": "v1.0.0",
+            "source": {
+                "type": "git",
+                "url": "https://github.com/stil/gd-text.git",
+                "reference": "a3e561afd5a53a6a4b0c1d64ebaf51e768348a66"
+            },
+            "dist": {
+                "type": "zip",
+                "url": "https://api.github.com/repos/stil/gd-text/zipball/a3e561afd5a53a6a4b0c1d64ebaf51e768348a66",
+                "reference": "a3e561afd5a53a6a4b0c1d64ebaf51e768348a66",
+                "shasum": ""
+            },
+            "require": {
+                "ext-gd": "*",
+                "php": ">=5.3"
+            },
+            "type": "library",
+            "autoload": {
+                "psr-4": {
+                    "GDText\\": "src/"
+                }
+            },
+            "notification-url": "https://packagist.org/downloads/",
+            "license": [
+                "MIT"
+            ],
+            "description": "A class drawing multiline and aligned text on pictures. Uses GD extension.",
+            "time": "2015-01-02 12:21:25"
         }
     ],
     "packages-dev": [],

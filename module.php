@@ -12,8 +12,10 @@ use diversen\db\rb as db_rb;
 use diversen\html;
 use diversen\html\helpers as html_helpers;
 use diversen\cli\optValid;
-//use diversen\pagination;
-//use diversen\buffer;
+use diversen\pagination;
+
+use GDText\Box;
+use GDText\Color;
 use diversen\uri\direct;
 use Gregwar\Image\Image;
 //use diversen\file\string as file_string;
@@ -34,6 +36,31 @@ class gitbook {
             ->resize(600, 800)
             //->write($font, $text, 150, 150, 20, 0, '#000', 'left')
             ->save($save);
+    }
+    
+    public function test2Action () {
+        //require __DIR__.'/../vendor/autoload.php';
+
+
+$im = imagecreatetruecolor(1800, 2400);
+// $im = imagecreatetruecolor(500, 500);
+$backgroundColor = imagecolorallocate($im, 255, 255, 255);
+imagefill($im, 0, 0, $backgroundColor);
+
+$box = new Box($im);
+$box->setFontFace(_COS_HTDOCS . "/fonts/captcha.ttf"); // http://www.dafont.com/franchise.font
+$box->setFontColor(new Color(0,0,0));
+//$box->setTextShadow(new Color(0, 0, 0, 50), 2, 2);
+$box->setFontSize(70);
+$box->setLineHeight(1.5);
+$box->setBox(20, 20, 1700, 2300);
+$box->setTextAlign('left', 'top');
+$box->draw(
+    "    Lorem ipsum dolor sit amet, consectetur adipiscing elit. Nulla eleifend congue auctor. Nullam eget blandit magna. Fusce posuere lacus at orci"
+);
+
+header("Content-type: image/png;");
+imagepng($im, null, 9, PNG_ALL_FILTERS);die;
     }
     
     /**
@@ -120,13 +147,15 @@ class gitbook {
         $per_page = 20;
         $num_rows = db_q::numRows('gitrepo')->fetch();
         
+        $pager = new pagination($num_rows, $per_page);
+        
         $rows = db_q::select('gitrepo')->
                 order('hits', 'DESC')->
-                limit(0, 1)->
+                limit($pager->from, $per_page)->
                 fetch();
         
-        
         echo $this->viewRepos($rows);
+        echo $pager->getPagerHTML();
     }
 
     /**
@@ -151,15 +180,14 @@ class gitbook {
     public function viewRepo($row) {
         $row = html::specialEncode($row);
         $str = '';
-        
         $str.=$this->viewHeaderCommon($row);
         
-        $str.= $this->optionsRepo($row);
-        $str.= MENU_SUB_SEPARATOR_SEC;
+        //$str.= $this->optionsRepo($row);
+        //$str.= MENU_SUB_SEPARATOR_SEC;
 
-        $ary = $this->exportsArray($row['id']);
-        $str.= lang::translate('Exports: ');
-        $str.= implode(MENU_SUB_SEPARATOR, $ary);
+        //$ary = $this->exportsArray($row['id']);
+        //$str.= lang::translate('Exports: ');
+        //$str.= implode(MENU_SUB_SEPARATOR, $ary);
         $str.= "<hr />";
         return $str;
     }
@@ -489,6 +517,17 @@ class gitbook {
     }
 
     /**
+     * return name of public md file with all markdown
+     * @param type $id
+     * @return string
+     */
+    public function mdAllFile($id) {
+        $row = $this->get($id);
+        $md_file = $this->exportsDir($id) . "/$row[name].md";
+        return $md_file;
+    }
+    
+    /**
      * checkout or clone repo
      */
     public function checkoutAction() {
@@ -502,51 +541,123 @@ class gitbook {
         </div>
         <script type="text/javascript">
 
-
             $.ajaxSetup({
+                async:false
             });
 
-            $.get("/gitbook/ajax?id=<?= $id ?>", function (data) {
-                $('.loader_message').html(data);
-                $('.loader_gif').hide();
+            
+            $.get("/gitbook/ajax?id=<?= $id ?>&format=files", function (data) {
+                $('.loader_message').append(data);
             });
-
+            
+            $.get("/gitbook/ajax?id=<?= $id ?>&format=html", function (data) {
+                $('.loader_message').append(data);
+            });
+            
+            $.get("/gitbook/ajax?id=<?= $id ?>&format=epub", function (data) {
+                $('.loader_message').append(data);
+            });
+            
+            $.get("/gitbook/ajax?id=<?= $id ?>&format=mobi", function (data) {
+                $('.loader_message').append(data);
+            });
+            
+            $.get("/gitbook/ajax?id=<?= $id ?>&format=pdf", function (data) {
+                $('.loader_message').append(data);
+            });
+            
+            $('.loader_gif').hide();
         </script>
         <?php
-    }
-
-    /**
-     * return name of public md file with all markdown
-     * @param type $id
-     * @return string
-     */
-    public function mdAllFile($id) {
-        $row = $this->get($id);
-        $md_file = $this->exportsDir($id) . "/$row[name].md";
-        return $md_file;
     }
 
     /**
      * perform ajax call
      */
     public function ajaxAction() {
-
+        
         $sleep = 0;
         $id = filter_var($_GET['id'], FILTER_VALIDATE_INT);
+        $format = filter_var($_GET['format']);
         if (!user::ownID('gitrepo', $id, session::getUserId())) {
             echo lang::translate("You can not perform any action on this page.");
             die();
         }
-
+        
         sleep($sleep);
-        echo lang::translate('Fetching repo ') . "<br />";
+        
+        if ($format == 'files') {
+            $this->ajaxGenerateFiles($id);
+            die();
+        }
+
+        $options = $this->yamlAsAry($id);
+        $formats = $this->exportFormatsReal($options['format-arguments']);
+        
+        // html
+        if (in_array('html', $formats) && $format == 'html') {
+            
+            // run pandoc
+            $this->pandocCommand($id, 'html', $options);
+            
+            // html not self-contained
+            $res = $this->moveAssets($id, 'html', $options);
+            if (!$res) {
+                $this->errors[] = lang::translate('Could not move all HTML assets');
+            } else {
+                $this->updateRow($id, array('published' => 1));
+            }
+            die();
+        }
+        
+        // epub
+        if (in_array('epub', $formats) && $format == 'epub') {    
+            $this->pandocCommand($id, 'epub', $options);
+            die();
+        }
+        
+        // mobi
+        if (in_array('mobi', $formats) && $format == 'mobi') {    
+            $this->kindlegenCommand($id, 'mobi', $options);
+            die();
+        }
+        
+        // pdf
+        if (in_array('pdf', $formats) && $format == 'pdf') {
+            $this->pandocCommand($id, 'pdf', $options);
+            die();
+            
+        }
+        
+        // docbook
+        if (in_array('docbook', $formats) && $format == 'docbook') {
+            $this->pandocCommand($id, 'docbook', $options);
+            die();
+        }
+        
+        // texi
+        if (in_array('texi', $formats) && $format == 'texi') {
+            $this->pandocCommand($id, 'texi', $options);
+            die();
+        }
+    }
+    
+    /**
+     * first part of ajax call
+     * checkout or clone repo. 
+     * save meta, generate images, save repo to db
+     * @param int $id repo $id
+     */
+    public function ajaxGenerateFiles ($id) {
+        
+        echo "<br />";
         $res = $this->execCheckout($id);
         if ($res) {
             echo lang::translate('Could not checkout repo. Somethings went wrong. Try again later') . "<br />";
             die();
+        } else {
+            echo lang::translate('Updated repo ') . "<br />";
         }
-
-        sleep($sleep);
         
         // remove old builds
         $public_path = $this->exportsDir($id);
@@ -567,8 +678,6 @@ class gitbook {
             echo html::getError('Could not write to filesystem. If you are admin you should fix this.');
         }
         
-        
-        
         // create a single file with yaml and markdown
         $md_file = $this->mdAllFile($id);
         $str = $this->filesAsStr($id);
@@ -578,111 +687,12 @@ class gitbook {
             die();
         }
         
-        // get parse options from git repos YAML
-        $options = $this->yamlAsAry($id);
-        
         $bean = db_rb::getBean('gitrepo', 'id', $id);
-        $bean->subtitle = $options['Subtitle'];
-        $bean->title = $options['title'];
+        $bean->subtitle = $yaml['Subtitle'];
+        $bean->title = $yaml['title'];
         R::store($bean);
-
-        // get export formats
-        $formats = $this->exportFormatsReal($options['format-arguments']);
-
-        
-        
-        $exports = array ();
-        
-        // epub
-        if (in_array('epub', $formats)) {
-            
-            
-            
-            $epub_ok = $this->pandocCommand($id, 'epub', $options);
-            if (!$epub_ok) {
-                $exports[] = 'epub';
-            }
-        }
-        
-        // mobi
-        if (in_array('mobi', $formats)) {    
-            $mobi_ok = $this->kindlegenCommand($id, 'mobi', $options);
-            if (!$mobi_ok) {
-                $exports[] = 'mobi';
-            }
-        }
-        
-        // pdf
-        if (in_array('pdf', $formats)) {
-            $pdf_ok = $this->pandocCommand($id, 'pdf', $options);
-            if (!$pdf_ok) {
-                $exports[] = 'pdf';
-            }
-        }
-
-        // docbook
-        if (in_array('docbook', $formats)) {
-            $docbook_ok = $this->pandocCommand($id, 'docbook', $options);
-            if (!$docbook_ok) {
-                $exports[] = 'docbook';
-            }
-        }
-        
-        // texi
-        if (in_array('texi', $formats)) {
-            $texi_ok = $this->pandocCommand($id, 'texi', $options);
-            if (!$texi_ok) {
-                $exports[] = 'texi';
-            }
-        }
-        
-        // html
-        if (in_array('html', $formats)) {
-                
-            // generate HTML fragment which will be used as menu
-            $this->exportsHtmlMenu($id, $exports);
-            
-            // run pandoc
-            $this->pandocCommand($id, 'html', $options);
-            
-            // html not self-contained
-            $res = $this->moveAssets($id, 'html', $options);
-            if (!$res) {
-                $this->errors[] = lang::translate('Could not move all HTML assets');
-            } else {
-                $this->updateRow($id, array('published' => 1));
-            }
-        }
-        
-
-        sleep($sleep);
-        if (empty($this->errors)) {
-            echo lang::translate("If no error were reported, you exports has been generated. ");
-        } else {
-            echo html::getErrors($this->errors);
-        }
-        die;
     }
-    
-    /**
-     * generate a header for html exports
-     * @param int $id repo id
-     */
-    public function exportsHtmlMenu($id) {
 
-        $export_dir = $this->exportsDirFull($id);
-        $export_file = "$export_dir/header.html";
-
-        $ary = array ();
-        $exports = $this->exportsArray($id);
-        foreach ($exports as $format) {
-            $ary[] = "<li>" . $format . "</li>";
-        }
-        $ary[] = "<li>" . html::createLink('/', 'Go to gittobook.org') . "</li>";
-        $str = '<div id="main_menu"><ul>' . implode('', $ary) . '</ul></div>';                
-        file_put_contents($export_file, $str);
-
-    }
 
     /**
      * return gitbook.ini gitbook_exports as array
@@ -1232,8 +1242,6 @@ EOF;
         $c = new count_module();
         $c->increment('gitrepo', 'hits', $id);
         
-        
-        
         // set meta info
         $yaml = $this->yamlAsAry($id);
         
@@ -1243,24 +1251,29 @@ EOF;
         }
         
         $repo = html::specialEncode($repo);
-        echo $this->viewHeaderCommon($repo);
         
+        $str = '';
+        $str.= $this->viewHeaderCommon($repo);
         
         $s = new gitbook_share();
-        echo $s->getShareString($repo['title'], $repo['subtitle']);
-        
-        //echo $s->get('stackoverflow', $share_opt);
-        
-        
-        //print_r($yaml['author']);
+        $str.= lang::translate('Share this using: ');
+        $str.= $s->getShareString($repo['title'], $repo['subtitle']);
+
         
         $this->setMeta($yaml);
         template::setTitle($yaml['title']);
         
         // get html fragment
         $exports = $this->exportsArray($id, array ('path' => true));
+
+        $ary = $this->exportsArray($id);
+        $str.= "<br />";
+        $str.= lang::translate('Exports: ');
+        $str.= implode(MENU_SUB_SEPARATOR, $ary);
+        
         $path = _COS_HTDOCS . "/$exports[html]";
-        echo file_get_contents($path);
+        $str.= file_get_contents($path);
+        echo $str;
 
     }
     
