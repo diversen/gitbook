@@ -14,10 +14,14 @@ use Gregwar\Image\Image;
 //use diversen\file\string as file_string;
 
 class gitbook {
+    
+    
+    public $allowed = array('md', 'jpg', 'gif', 'png');
 
+    public $mime = ['image/png', 'image/gif', 'image/jpeg', 'image/jpg'];
     
     /**
-     * test action for crating a cover
+     * test action for creating a cover
      */
     public function coverAction () {
         $id = direct::fragment(2);
@@ -34,11 +38,7 @@ class gitbook {
      * @return array $yaml rewritten yaml
      */
     public function coverGenerate ($id, $yaml) {
-        $c = new gitbook_cover();
-        $c->create($id);
-        $save = _COS_HTDOCS . "/books/$id/cover.png"; 
-        $yaml['cover-image'] = $save;
-        return $yaml;
+        
     }
     
     public function coverScale ($id) {
@@ -447,8 +447,6 @@ class gitbook {
         return $final;
     }
 
-    public $allowed = array('md', 'jpg', 'gif', 'png');
-
     /**
      * get repo name repo url
      * @param string $url
@@ -612,12 +610,36 @@ class gitbook {
         $fs = new Filesystem();
         $fs->mkdir($public_path, 0777);
         
+        // generate cover
         $yaml = $this->yamlAsAry($id);
+        $c = new gitbook_cover();
         if ($yaml['cover-image'] == 'Not set') {
-            $yaml = $this->coverGenerate($id, $yaml);
+            $c->create($id);
+            $cover_image = _COS_HTDOCS . "/books/$id/cover.png"; 
         } else {
-            
+            $cover_image = $this->repoPath($id) . "/" . $yaml['cover-image'];
         }
+        
+        if (!file_exists($cover_image)) {
+            $error = lang::translate('Cover file does not exists in repo: ') . $yaml['cover-image'] . ". "; 
+            $error.= lang::translate('Correct path and re-build. We use a default cover');
+            echo html::getError($error);
+            $c->create($id);
+            $cover_image = _COS_HTDOCS . "/books/$id/cover.png"; 
+        }
+        
+        $mime = file::getMime($cover_image);
+        if (!in_array($mime, $this->mime)) {
+            $error = lang::translate('Your cover image does not have the correct type. Allowed types are gif, jpg, jpeg, png') . ". ";
+            $error.= lang::translate('Correct image and re-build. We use a default cover');
+            $c->create($id);
+            $cover_image = _COS_HTDOCS . "/books/$id/cover.png"; 
+            echo html::getError($error);
+        }
+        
+        $yaml['cover-image'] = $cover_image;
+        
+        
         
         // generate yaml meta in exports
         $yaml_res = $this->yamlExportsMeta($id, $yaml);
@@ -639,6 +661,8 @@ class gitbook {
         $bean->title = $yaml['title'];
         R::store($bean);
     }
+    
+    
 
 
     /**
