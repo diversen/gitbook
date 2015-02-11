@@ -1,8 +1,7 @@
 <?php
 
 
-$vendor = dirname(__FILE__) . "/vendor";
-require "$vendor/autoload.php";
+
 
 use Symfony\Component\Yaml\Parser;
 use Symfony\Component\Yaml\Dumper;
@@ -13,9 +12,6 @@ use diversen\html;
 use diversen\html\helpers as html_helpers;
 use diversen\cli\optValid;
 use diversen\pagination;
-
-use GDText\Box;
-use GDText\Color;
 use diversen\uri\direct;
 use Gregwar\Image\Image;
 //use diversen\file\string as file_string;
@@ -37,56 +33,29 @@ class gitbook {
             //->write($font, $text, 150, 150, 20, 0, '#000', 'left')
             ->save($save);
     }
+
     
-    public function test2Action () {
-        //require __DIR__.'/../vendor/autoload.php';
-
-
-$im = imagecreatetruecolor(1800, 2400);
-// $im = imagecreatetruecolor(500, 500);
-$backgroundColor = imagecolorallocate($im, 255, 255, 255);
-imagefill($im, 0, 0, $backgroundColor);
-
-$box = new Box($im);
-$box->setFontFace(_COS_HTDOCS . "/fonts/captcha.ttf"); // http://www.dafont.com/franchise.font
-$box->setFontColor(new Color(0,0,0));
-//$box->setTextShadow(new Color(0, 0, 0, 50), 2, 2);
-$box->setFontSize(70);
-$box->setLineHeight(1.5);
-$box->setBox(20, 20, 1700, 2300);
-$box->setTextAlign('left', 'top');
-$box->draw(
-    "    Lorem ipsum dolor sit amet, consectetur adipiscing elit. Nulla eleifend congue auctor. Nullam eget blandit magna. Fusce posuere lacus at orci"
-);
-
-header("Content-type: image/png;");
-imagepng($im, null, 9, PNG_ALL_FILTERS);die;
+    /**
+     * test action for crating a cover
+     */
+    public function coverAction () {
+        $id = direct::fragment(2);
+        $yaml = $this->yamlAsAry($id);
+        $c = new gitbook_cover();
+        $c->create($id);
+        echo html::createLink("/books/$id/cover.png", "cover");
     }
-    
+
     /**
      * will generate a cover image for epub and mobi files if it has not 
      * it also rewrite yaml
      * be supplied
+     * @return array $yaml rewritten yaml
      */
     public function coverGenerate ($id, $yaml) {
-        $save = _COS_HTDOCS . "/books/$id/cover.jpg";
-
-        $font = _COS_HTDOCS . "/fonts/captcha.ttf";
-        $image = config::getModulePath('gitbook') . "/images/cover.jpg";
-        
-        // ration 600 x 800
-        $title = mb_substr($yaml['title'], 0 , 25);
-        
-        
-        $img = Image::open($image);
-            //->font title       left top fs   angel
-        $img->write($font, $title, 20, 500, 80, 0, '#0066cc', 'left');
-        $written_by = lang::translate('Written by: ');
-        $img->write($font, $written_by, 20, 1000, 40, 0, '#333', 'left');
-        
-        
-        $img->save($save);
-        
+        $c = new gitbook_cover();
+        $c->create($id);
+        $save = _COS_HTDOCS . "/books/$id/cover.png"; 
         $yaml['cover-image'] = $save;
         return $yaml;
     }
@@ -100,6 +69,8 @@ imagepng($im, null, 9, PNG_ALL_FILTERS);die;
      */
     public function __construct() {
         db_rb::connect();
+        $css = config::getModulePath('gitbook') . "/assets.css";
+        template::setInlineCss($css);
     }
 
     /**
@@ -132,7 +103,7 @@ imagepng($im, null, 9, PNG_ALL_FILTERS);die;
         if ($bean->id) {
             $user_id = session::getUserId();
             $rows = db_q::select('gitrepo')->filter('user_id =', $user_id)->fetch();
-            echo $this->viewRepos($rows);
+            echo $this->viewRepos($rows, array('options' => '1', 'exports' => 1));
         }
 
         echo $this->viewAddRepo();
@@ -163,11 +134,11 @@ imagepng($im, null, 9, PNG_ALL_FILTERS);die;
      * @param array $rows
      * @return string $str HTML
      */
-    public function viewRepos($rows) {
+    public function viewRepos($rows, $options = array ()) {
 
         $str = '';
         foreach ($rows as $row) {
-            $str.= $this->viewRepo($row);
+            $str.= $this->viewRepo($row, $options);
         }
         return $str;
     }
@@ -177,17 +148,10 @@ imagepng($im, null, 9, PNG_ALL_FILTERS);die;
      * @param array $row
      * @return string $str HTML
      */
-    public function viewRepo($row) {
+    public function viewRepo($row, $options = array ()) {
         $row = html::specialEncode($row);
         $str = '';
-        $str.=$this->viewHeaderCommon($row);
-        
-        //$str.= $this->optionsRepo($row);
-        //$str.= MENU_SUB_SEPARATOR_SEC;
-
-        //$ary = $this->exportsArray($row['id']);
-        //$str.= lang::translate('Exports: ');
-        //$str.= implode(MENU_SUB_SEPARATOR, $ary);
+        $str.=$this->viewHeaderCommon($row, $options);
         $str.= "<hr />";
         return $str;
     }
@@ -663,13 +627,15 @@ imagepng($im, null, 9, PNG_ALL_FILTERS);die;
         $public_path = $this->exportsDir($id);
         file::rrmdir($public_path);
         
-        //$cover_res = $this->coverGenerate($id);
-        $yaml = $this->yamlAsAry($id);
-        $cover_default = config::getModulePath('gitbook') . "/images/cover.jpg";
+        // mkdir public
+        $fs = new Filesystem();
+        $fs->mkdir($public_path, 0777);
         
-        // There has not been set a cover
-        if ($yaml['cover-image'] == $cover_default) {
+        $yaml = $this->yamlAsAry($id);
+        if ($yaml['cover-image'] == 'Not set') {
             $yaml = $this->coverGenerate($id, $yaml);
+        } else {
+            
         }
         
         // generate yaml meta in exports
@@ -787,7 +753,7 @@ imagepng($im, null, 9, PNG_ALL_FILTERS);die;
      */
     public function yamlDefaultStr () {
         $date = date::getDateNow();
-        $cover = config::getModulePath('gitbook') . "/images/cover.jpg";
+        $cover = 'Not set'; /* config::getModulePath('gitbook') . "/images/cover.jpg"; */
         $template = config::getModulePath('gitbook') . "/templates/body.html";
         $str = <<<EOF
 ---
@@ -1277,8 +1243,15 @@ EOF;
 
     }
     
-    public function viewHeaderCommon ($repo) {
-        
+    /**
+     * get repo headers common
+     * @param array $repo
+     * @param array $options
+     * @return string $html
+     */
+    
+    public function viewHeaderCommon ($repo, $options = array ()) {
+
         $url = $this->exportsDirWeb($repo['id']) . "/" . $repo['name'];
         $str = '';
         $str.= html::createLink($url, html::getHeadline($repo['title']));
@@ -1289,6 +1262,19 @@ EOF;
         $p = new userinfo_module();
         $str.= lang::translate('Edited by: ');
         $str.= $p->getLink($repo['user_id']) . "<br />";
+         
+        if (isset($options['exports'])) {
+            $ary = $this->exportsArray($repo['id']);     
+            $str.= lang::translate('Exports: ');
+            $str.= implode(MENU_SUB_SEPARATOR, $ary);
+        }
+        if (isset($options['options'])) {
+            $str.= "<br />";
+            $str.= $this->optionsRepo($repo);
+            //die;
+        }
+        
+        
         return $str;
     }
     

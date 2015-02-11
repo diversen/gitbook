@@ -1,0 +1,7 @@
+.cover img {
+    border: 1px solid #dae0e5;
+    display: block;
+    margin: 0 auto;
+    max-width: 400px;
+    width: 100%;
+}
