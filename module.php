@@ -1,8 +1,5 @@
 <?php
 
-
-
-
 use Symfony\Component\Yaml\Parser;
 use Symfony\Component\Yaml\Dumper;
 use Symfony\Component\Filesystem\Filesystem;
@@ -17,22 +14,6 @@ use Gregwar\Image\Image;
 //use diversen\file\string as file_string;
 
 class gitbook {
-
-    public function testAction () {
-        $save = _COS_HTDOCS . "/files/cover.jpg";
-
-        $font = _COS_HTDOCS . "/fonts/captcha.ttf";
-        $image = config::getModulePath('gitbook') . "/images/white.jpg";
-        
-        // ration 600 x 800
-        $text = "Her er en noget længere tekst";
-        
-        //$text.= $text . $text;
-        Image::open($image)
-            ->resize(600, 800)
-            //->write($font, $text, 150, 150, 20, 0, '#000', 'left')
-            ->save($save);
-    }
 
     
     /**
