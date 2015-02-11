@@ -21,7 +21,7 @@ class gitbook_cover extends gitbook {
 
         $box = new Box($im);
 
-        $font = config::getModulePath('gitbook') . "/fonts/OpenSans-ExtraBold.ttf";
+        $font = config::getModulePath('gitbook') . "/fonts/OpenSans-Bold.ttf";
 
         $box->setFontFace($font); // http://www.dafont.com/franchise.font
         $box->setFontColor(new Color(0, 0, 0));
@@ -54,9 +54,9 @@ class gitbook_cover extends gitbook {
         foreach ($yaml['author'] as $a) {
             $authors.="$a\n";
         }
-//die;
+
         $authors = substr($authors, 0, 255);
-        $font = config::getModulePath('gitbook') . "/fonts/OpenSans-ExtraBold.ttf";
+        $font = config::getModulePath('gitbook') . "/fonts/OpenSans-Bold.ttf";
 
         $box->setFontFace($font); // http://www.dafont.com/franchise.font
         $box->setFontColor(new Color(33, 33, 33));
@@ -67,9 +67,7 @@ class gitbook_cover extends gitbook {
         $box->setTextAlign('center', 'top');
 
         
-        $box->draw(
-                $authors
-        );
+        $box->draw($authors);
 
         //imagepng($im, $save, 0, PNG_ALL_FILTERS);
         imagepng($im, $save);
