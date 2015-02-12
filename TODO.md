@@ -14,4 +14,10 @@
 // scale images
 meta tags title etc
 generate title
+better user repo list
+repo: option: auto checkout (e.g. once a day) 
+prevent export of html
+download of exports
+
+
 

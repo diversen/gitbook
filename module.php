@@ -87,6 +87,7 @@ class gitbook {
         $pager = new pagination($num_rows, $per_page);
         
         $rows = db_q::select('gitrepo')->
+                filter('published =', 1)->
                 order('hits', 'DESC')->
                 limit($pager->from, $per_page)->
                 fetch();
@@ -115,7 +116,7 @@ class gitbook {
      * @return string $str HTML
      */
     public function viewRepo($row, $options = array ()) {
-        $row = html::specialEncode($row);
+
         $str = '';
         $str.=$this->viewHeaderCommon($row, $options);
         $str.= "<hr />";
@@ -526,8 +527,12 @@ class gitbook {
         if (in_array('html', $formats) && $format == 'html') {
             
             // run pandoc
-            $this->pandocCommand($id, 'html', $options);
-            
+            $res = $this->pandocCommand($id, 'html', $options);
+            if ($res) {
+                $this->updateRow($id, array('published' => 0));
+                die();
+                //return false;
+            }
             // html not self-contained
             $res = $this->moveAssets($id, 'html', $options);
             if (!$res) {
@@ -666,6 +671,7 @@ class gitbook {
      * @return array $ary formats
      */
     public function exportFormatsReal ($options) {
+
         $ini = $this->exportFormatsIni();
         $ary = array ();
         foreach($options as $key => $val) {
@@ -806,11 +812,28 @@ EOF;
      */
     public function yamlFix ($values) {
         $default = $this->yamlDefaultAry();
+        
+
+        // format-options
+        
+        foreach ($default['format-arguments'] as $key => $val) {
+            if (isset($values['format-arguments'][$key])) {
+                $default['format-arguments'][$key] = $values['format-arguments'][$key];
+            } else {
+                $default['format-arguments'][$key] = $val;
+            }
+        }
+        
         foreach ($default as $key => $val) {
+            if ($key == 'format-arguments') { 
+                continue;
+            }
+            
             if (isset($values[$key])) {
                 $default[$key] = $values[$key];
             }
         }
+
         return $default;
     }
 
@@ -899,12 +922,8 @@ EOF;
     public function pandocAddArgs ($id, $type) {
         $str ='';
         if ($type == 'html') {
-            
-            // add menu with downloads in html header
-            // $export_dir = $this->exportsDirFull($id);
-            // $export_file = "$export_dir/header.html";
-            // $str.= " --include-before-body=$export_file -t html5 ";
-            $str.= " -t html5 ";
+            $template = config::getModulePath('gitbook') . "/templates/body.html";
+            $str.= " --template=$template -t html5 ";
         }
         
         if ($type == 'docbook') {
@@ -954,9 +973,11 @@ EOF;
             // Number section headings in LaTeX, ConTeXt, HTML, or EPUB output.
             'N' => null,
             'number-sections' => null,
-            // Link to a CSS style sheet. 
-            'c' => null,
-            'css' => null,
+            // Link to a CSS style sheet (for HTML - not allowed). 
+            //'c' => null,
+            //'css' => null,
+            // user template
+            
             'template' => null,
             // Use the specified CSS file to style the EPUB
             'epub-stylesheet' => null,
@@ -1065,11 +1086,13 @@ EOF;
 
         // add base flags
         $base_flags = $this->pandocArgs($id, $type, $options);
-        $base_flags = escapeshellcmd($base_flags);
+        
         if (!$base_flags) {
             echo html::getErrors($this->errors);
-            die;
+            return 128;
         }
+        
+        $base_flags = escapeshellcmd($base_flags);
 
         $command.= "pandoc $base_flags ";
         $command.= "-o $export_file ";
@@ -1138,7 +1161,7 @@ EOF;
      */
     public function execClone($row) {
         $clone_path = $this->repoCheckoutPath($row);
-        $command = "cd $clone_path && git clone $row[repo]";
+        $command = "cd $clone_path && git clone  $row[repo]";
         exec($command, $output, $res);
         if ($res) {
             log::error($output);
@@ -1154,7 +1177,7 @@ EOF;
     public function checkout($row) {
         $checkout_path = $this->repoCheckoutPath($row);
         $checkout_path.= "/$row[name]";
-        $command = "cd $checkout_path && git pull";
+        $command = "cd $checkout_path && git pull ";
         exec($command, $output, $res);
         if ($res) {
             log::error($output);
@@ -1206,7 +1229,7 @@ EOF;
             // lang::loadLanguage('zh');
         }
         
-        $repo = html::specialEncode($repo);
+        
         
         $str = '';
         
@@ -1218,8 +1241,8 @@ EOF;
         //$str.= $s->getShareString($repo['title'], $repo['subtitle']);
 
         
-        $this->setMeta($yaml);
-        template::setTitle($yaml['title']);
+        $this->setMeta($yaml, $repo);
+        
         
         
         $exports = $this->exportsArray($repo['id'], array('path' => true));
@@ -1235,8 +1258,8 @@ EOF;
      * @param array $options
      * @return string $html
      */
-        public function viewHeaderCommon ($repo, $options = array ()) {
-
+    public function viewHeaderCommon ($repo, $options = array ()) {
+        $repo = html::specialEncode($repo);
         
         $url = $this->exportsDirWeb($repo['id']) . "/" . $repo['name'];
         $str = '';
@@ -1314,15 +1337,94 @@ EOF;
         return $str;
     }
     
+        /**
+     * generates meta as chapter title - book title
+     * @param type $id
+     */
+    public function setMetas ($id) {
+        
+        $art = $this->get($id);
+        $b = new content_book_module();
+        $book_id = $b->getBookIdFromArticle($id);
+        $book = $b->getBook($book_id);
+        
+        $title = $book['author']. MENU_SUB_SEPARATOR_SEC;
+        $title.= $book['title'] . MENU_SUB_SEPARATOR_SEC;
+        $title.= $art['title'] . ' ';
+        $title = html::specialEncode($title);
+        
+        template_assets::setTitle($title);
+        template_meta::setMetaAsStr('<meta property="og:title" content="'.$title.'" />' . "\n");
+        
+        $meta = '';
+        // $meta.= content_export_module::getBookExportsStr($book);
+        $meta.= ' ';
+        
+        if (!empty($art['abstract'])) {
+            $meta.= $art['abstract'];
+        } else if (!empty($book['abstract'])) {
+            $meta.= $book['abstract'];
+        } else {
+            $meta.= $book['author'] . MENU_SUB_SEPARATOR_SEC;
+            $meta.= $book['title'] . MENU_SUB_SEPARATOR_SEC;
+            $meta.= $art['title'];
+        }
+        
+        $desc = strings::substr2($meta, 160);
+        $og_desc = html::specialEncode(strings::substr2($meta, 320));
+        $img = new image_module();
+        $row = $img->imageExists($book_id, 'content/cover');
+
+        if (!empty($row)) {
+            $info = $img->getSingleFileInfo($row['id']);            
+            $server = config::getSchemeWithServerName();
+            $path = $server. $img->getFullWebPath($info);
+            template_meta::setMetaAsStr(
+                    '<meta property="og:type" content="book"/>' . "\n");
+            /*
+            template_meta::setMetaAsStr(
+                    '<meta property="book:author" content="'.html::specialEncode($book['author']).'"/>' . "\n");
+            */
+            
+            
+            template_meta::setMetaAsStr(
+                    '<meta property="og:description" content="'.$og_desc.'"/>' . "\n");
+            template_meta::setMetaAsStr(
+                    '<meta property="og:image" content="'.$path.'"/>' . "\n");
+
+        }
+        
+        
+        template_meta::setMeta(array('description' => $desc));
+        return;
+    }
+    
     /**
      * 
      * set meta info in head
      * @param array $ary
      */
-    public function setMeta ($ary) {
+    public function setMeta ($yaml, $row) {
+        
+        $desc = strings::substr2($yaml['Subtitle'], 255);
+        $og_desc = html::specialEncode(strings::substr2($yaml['Subtitle'], 320));
+
+        $title = $yaml['title'];
+        template_assets::setTitle($title);
+        template_meta::setMetaAsStr('<meta property="og:title" content="'.html::specialEncode($title).'" />' . "\n");
+        
+        $server = config::getSchemeWithServerName();
+        $image = $server. $row['image'];
+        
+        template_meta::setMetaAsStr(
+                '<meta property="og:type" content="book"/>' . "\n");
+        template_meta::setMetaAsStr(
+                '<meta property="og:description" content="' . $og_desc . '"/>' . "\n");
+        template_meta::setMetaAsStr(
+                '<meta property="og:image" content="' . $image . '"/>' . "\n");
         template_meta::setMeta(
-                array ('description' => $ary['Subtitle'],
-                       'keywords' => $ary['keywords']));
+                array ('description' => $desc,
+                       'keywords' => $yaml['keywords']));
     }
 }
 
