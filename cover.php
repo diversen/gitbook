@@ -5,6 +5,7 @@ require "$vendor/autoload.php";
 
 use GDText\Box;
 use GDText\Color;
+use Gregwar\Image\Image;
 
 class gitbook_cover extends gitbook {
 
@@ -12,8 +13,8 @@ class gitbook_cover extends gitbook {
 
         $yaml = $this->yamlAsAry($id);
         $save = _COS_HTDOCS . "/books/$id/cover.png";
-
         $title = mb_substr($yaml['title'], 0, 60);
+        
         $im = imagecreatetruecolor(1800, 2400);
         $backgroundColor = imagecolorallocate($im, 255, 255, 255);
         imagefill($im, 0, 0, $backgroundColor);
@@ -27,7 +28,7 @@ class gitbook_cover extends gitbook {
         //$box->setTextShadow(new Color(0, 0, 0, 50), 2, 2);
         $box->setFontSize(80);
         $box->setLineHeight(1.5);
-        $box->setBox(100, 700, 1600, 2300);
+        $box->setBox(100, 600, 1600, 2300);
         $box->setTextAlign('center', 'top');
 
         $box->draw(
@@ -38,14 +39,13 @@ class gitbook_cover extends gitbook {
 
         $box->setFontFace($font); // http://www.dafont.com/franchise.font
         $box->setFontColor(new Color(33, 33, 33));
-        $box->setFontSize(40);
+        $box->setFontSize(60);
         $box->setLineHeight(1.5);
-        $box->setBox(200, 1000, 1400, 2300);
+        $box->setBox(200, 900, 1400, 2300);
         $box->setTextAlign('center', 'top');
+        
         $sub = mb_substr($yaml['Subtitle'], 0, 255);
-        $box->draw(
-                $sub
-        );
+        $box->draw($sub);
 
         $authors = '';
         foreach ($yaml['author'] as $a) {
@@ -57,10 +57,9 @@ class gitbook_cover extends gitbook {
 
         $box->setFontFace($font); // http://www.dafont.com/franchise.font
         $box->setFontColor(new Color(33, 33, 33));
-
         $box->setFontSize(80);
         $box->setLineHeight(1.5);
-        $box->setBox(200, 1400, 1400, 2300);
+        $box->setBox(200, 1500, 1400, 2300);
         $box->setTextAlign('center', 'top');
         $box->draw($authors);
 
@@ -69,7 +68,6 @@ class gitbook_cover extends gitbook {
     }
     
     public function testAction () {
-        //die('ok');
         $save = _COS_HTDOCS . "/files/cover.jpg";
 
         $font = _COS_HTDOCS . "/fonts/captcha.ttf";
@@ -85,7 +83,18 @@ class gitbook_cover extends gitbook {
             ->save($save);
     }
     
-    public function scale () {
+    public function scale ($id, $image) {
         
+        $assets_dir = $this->exportsDir($id) . "/assets";
+        file::mkdirDirect($assets_dir);
+
+        $parts = pathinfo($image);
+        $save = $assets_dir . '/scaled-' . $parts['basename'];
+        //$yaml['cover-image'] = $cover_image;
+        
+        $bg = 0xffffff;
+        Image::open($image)->
+            scaleResize(1800 / 6, 2400 / 6, $bg)->
+            save($save);        
     }
 }

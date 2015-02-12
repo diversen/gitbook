@@ -10,7 +10,6 @@ use diversen\html\helpers as html_helpers;
 use diversen\cli\optValid;
 use diversen\pagination;
 use diversen\uri\direct;
-use Gregwar\Image\Image;
 //use diversen\file\string as file_string;
 
 class gitbook {
@@ -29,20 +28,6 @@ class gitbook {
         $c = new gitbook_cover();
         $c->create($id);
         echo html::createLink("/books/$id/cover.png", "cover");
-    }
-
-    /**
-     * will generate a cover image for epub and mobi files if it has not 
-     * it also rewrite yaml
-     * be supplied
-     * @return array $yaml rewritten yaml
-     */
-    public function coverGenerate ($id, $yaml) {
-        
-    }
-    
-    public function coverScale ($id) {
-        
     }
     
     /**
@@ -637,7 +622,9 @@ class gitbook {
             echo html::getError($error);
         }
         
+        $c->scale($id, $cover_image);
         $yaml['cover-image'] = $cover_image;
+        
         
         
         
