@@ -622,11 +622,8 @@ class gitbook {
             echo html::getError($error);
         }
         
-        $c->scale($id, $cover_image);
+        $image_path = $c->scale($id, $cover_image);
         $yaml['cover-image'] = $cover_image;
-        
-        
-        
         
         // generate yaml meta in exports
         $yaml_res = $this->yamlExportsMeta($id, $yaml);
@@ -646,6 +643,7 @@ class gitbook {
         $bean = db_rb::getBean('gitrepo', 'id', $id);
         $bean->subtitle = $yaml['Subtitle'];
         $bean->title = $yaml['title'];
+        $bean->image = $image_path; 
         R::store($bean);
     }
     
@@ -1211,24 +1209,20 @@ EOF;
         $repo = html::specialEncode($repo);
         
         $str = '';
-        $str.= $this->viewHeaderCommon($repo);
         
-        $s = new gitbook_share();
-        $str.= lang::translate('Share this using: ');
-        $str.= $s->getShareString($repo['title'], $repo['subtitle']);
+        $options = array ('share' => 1, 'exports' => 1 );
+        $str.= $this->viewHeaderCommon($repo, $options);
+        
+        //$s = new gitbook_share();
+        //$str.= lang::translate('Share this using: ');
+        //$str.= $s->getShareString($repo['title'], $repo['subtitle']);
 
         
         $this->setMeta($yaml);
         template::setTitle($yaml['title']);
         
-        // get html fragment
-        $exports = $this->exportsArray($id, array ('path' => true));
-
-        $ary = $this->exportsArray($id);
-        $str.= "<br />";
-        $str.= lang::translate('Exports: ');
-        $str.= implode(MENU_SUB_SEPARATOR, $ary);
         
+        $exports = $this->exportsArray($repo['id'], array('path' => true));
         $path = _COS_HTDOCS . "/$exports[html]";
         $str.= file_get_contents($path);
         echo $str;
@@ -1241,39 +1235,94 @@ EOF;
      * @param array $options
      * @return string $html
      */
-    
-    public function viewHeaderCommon ($repo, $options = array ()) {
+        public function viewHeaderCommon ($repo, $options = array ()) {
 
+        
         $url = $this->exportsDirWeb($repo['id']) . "/" . $repo['name'];
         $str = '';
+
         $str.= html::createLink($url, html::getHeadline($repo['title']));
-        $str.= $repo['subtitle'] . "<br />";
-        $str.= lang::translate('Repo URL: '); 
+        $str.= $repo['subtitle'];
+        
+        $str.= '<table class="gb_table">'; 
+        $str.= '<tr>';
+        $str.= '<td>';
+        $str.= lang::translate('Repo URL: ');
+        $str.='</td>';
+        $str.='<td>';
         $str.= html::createLink($repo['repo'], $repo['repo']) . "<br />";
-       
+        $str.='</td>';
+        $str.='</tr>';
+        
+        $str.='<tr>';
+        $str.='<td>';
         $p = new userinfo_module();
         $str.= lang::translate('Edited by: ');
-        $str.= $p->getLink($repo['user_id']) . "<br />";
-         
-        if (isset($options['exports'])) {
-            $ary = $this->exportsArray($repo['id']);     
-            $str.= lang::translate('Exports: ');
-            $str.= implode(MENU_SUB_SEPARATOR, $ary);
-        }
+        $str.='</td>';
+        $str.='<td>';
+        $str.= $p->getLink($repo['user_id']);
+        $str.='</td>';
+        $str.='</tr>';
+        
+        $str.='<tr>';
+        $str.='<td>';
+
+        $str.= lang::translate('Cover image: ');
+        $str.='</td>';
+        $str.='<td>';
+        $str.= html::createLink( $repo['image'], 'Cover image');
+        $str.='</td>';
+        $str.='</tr>';
+        
+
         if (isset($options['options'])) {
-            $str.= "<br />";
+            $str.='<tr>';
+            $str.='<td>';
+            $str.= lang::translate('Options');
+            $str.='</td>';
+            $str.='<td>';
             $str.= $this->optionsRepo($repo);
-            //die;
+            $str.='</td>';
+            $str.='</tr>';
         }
         
+        if (isset($options['share'])) {
+            $s = new gitbook_share();
+            $str.= '<tr>';
+            $str.= '<td>';
+            $str.= lang::translate('Share this using: ');
+            $str.= '</td>';
+            $str.= '<td>';
+            $str.= $s->getShareString($repo['title'], $repo['subtitle']);
+            $str.= '</td>';
+            $str.= '</tr>';
+        }
         
+        if (isset($options['exports'])) {
+
+            $ary = $this->exportsArray($repo['id']);
+            $str.='<tr>';
+            $str.='<td>';
+            $str.= lang::translate('Exports: ');
+            $str.='</td>';
+            $str.='<td>';
+            $str.= implode(MENU_SUB_SEPARATOR, $ary);
+            $str.='</td>';
+            $str.='</tr>';
+        }
+        $str.='</table>';
         return $str;
     }
     
+    /**
+     * 
+     * set meta info in head
+     * @param array $ary
+     */
     public function setMeta ($ary) {
         template_meta::setMeta(
                 array ('description' => $ary['Subtitle'],
-                       'keywords' => 'test'. $ary['keywords']));
+                       'keywords' => $ary['keywords']));
     }
 }
 

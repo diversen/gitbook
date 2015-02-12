@@ -6,7 +6,10 @@ CREATE TABLE `gitrepo` (
   `repo` varchar(255) CHARACTER SET utf8 DEFAULT NULL,
   `date` datetime DEFAULT NULL,
   `user_id` int(11) unsigned DEFAULT NULL,
-  `published` boolean default 0,
-  `hits` int(11) unsigned DEFAULT 0,
+  `published` tinyint(1) DEFAULT '0',
+  `hits` int(11) unsigned DEFAULT '0',
+  `subtitle` varchar(255) COLLATE utf8mb4_unicode_ci DEFAULT NULL,
+  `author` varchar(255) COLLATE utf8mb4_unicode_ci DEFAULT NULL,
+  `image` varchar(255) COLLATE utf8mb4_unicode_ci DEFAULT NULL,
   PRIMARY KEY (`id`)
-) ENGINE=InnoDB AUTO_INCREMENT=12 DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci
+) ENGINE=InnoDB AUTO_INCREMENT=47 DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci

@@ -1,3 +1,40 @@
+.gb_header {
+
+}
+/*
+.gb_header_image {
+    max-width:30%;
+}
+
+.gb_header_text {
+    float: right;
+    max-width: 66%;
+    margin-left: 2%;
+    margin-right: 2%;
+
+
+}*/
+
+/*
+table, th, td {
+    border: 1px solid black;
+}*/
+
+.gb_table {
+    border-collapse: collapse;
+    width:100%;
+
+}
+
+.gb_table td {
+
+    
+}
+
+.gb_header_image {
+    min-width:100%;
+}
+
 .cover img {
     border: 1px solid #dae0e5;
     display: block;

@@ -41,7 +41,7 @@ class gitbook_cover extends gitbook {
         $box->setFontColor(new Color(33, 33, 33));
         $box->setFontSize(60);
         $box->setLineHeight(1.5);
-        $box->setBox(200, 900, 1400, 2300);
+        $box->setBox(200, 900, 1400, 2200);
         $box->setTextAlign('center', 'top');
         
         $sub = mb_substr($yaml['Subtitle'], 0, 255);
@@ -59,7 +59,7 @@ class gitbook_cover extends gitbook {
         $box->setFontColor(new Color(33, 33, 33));
         $box->setFontSize(80);
         $box->setLineHeight(1.5);
-        $box->setBox(200, 1500, 1400, 2300);
+        $box->setBox(200, 1500, 1400, 2200);
         $box->setTextAlign('center', 'top');
         $box->draw($authors);
 
@@ -67,21 +67,12 @@ class gitbook_cover extends gitbook {
         imagepng($im, $save);
     }
     
-    public function testAction () {
-        $save = _COS_HTDOCS . "/files/cover.jpg";
-
-        $font = _COS_HTDOCS . "/fonts/captcha.ttf";
-        $image = config::getModulePath('gitbook') . "/images/white.jpg";
-        
-        // ration 600 x 800
-        $text = "Her er en noget længere tekst";
-        
-        //$text.= $text . $text;
-        Image::open($image)
-            ->resize(600, 800)
-            //->write($font, $text, 150, 150, 20, 0, '#000', 'left')
-            ->save($save);
-    }
+    /**
+     * scale image
+     * @param int $id
+     * @param string $image
+     * @return string $save full save path of image
+     */
     
     public function scale ($id, $image) {
         
@@ -90,11 +81,12 @@ class gitbook_cover extends gitbook {
 
         $parts = pathinfo($image);
         $save = $assets_dir . '/scaled-' . $parts['basename'];
-        //$yaml['cover-image'] = $cover_image;
         
         $bg = 0xffffff;
         Image::open($image)->
-            scaleResize(1800 / 6, 2400 / 6, $bg)->
-            save($save);        
+            scaleResize(1800 / 2, 2400 / 2, $bg)->
+            save($save);
+        
+        return "/books/$id/assets/scaled-" . $parts['basename'];
     }
 }
