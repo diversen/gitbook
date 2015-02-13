@@ -1229,21 +1229,12 @@ EOF;
             // lang::loadLanguage('zh');
         }
         
-        
-        
         $str = '';
-        
         $options = array ('share' => 1, 'exports' => 1 );
         $str.= $this->viewHeaderCommon($repo, $options);
-        
-        //$s = new gitbook_share();
-        //$str.= lang::translate('Share this using: ');
-        //$str.= $s->getShareString($repo['title'], $repo['subtitle']);
-
-        
-        $this->setMeta($yaml, $repo);
-        
-        
+                
+        template_meta::setMetaAll(
+                $yaml['title'], $yaml['Subtitle'], $yaml['keywords'], $repo['image'], 'book');
         
         $exports = $this->exportsArray($repo['id'], array('path' => true));
         $path = _COS_HTDOCS . "/$exports[html]";
@@ -1336,98 +1327,7 @@ EOF;
         $str.='</table>';
         return $str;
     }
-    
-        /**
-     * generates meta as chapter title - book title
-     * @param type $id
-     */
-    public function setMetas ($id) {
-        
-        $art = $this->get($id);
-        $b = new content_book_module();
-        $book_id = $b->getBookIdFromArticle($id);
-        $book = $b->getBook($book_id);
-        
-        $title = $book['author']. MENU_SUB_SEPARATOR_SEC;
-        $title.= $book['title'] . MENU_SUB_SEPARATOR_SEC;
-        $title.= $art['title'] . ' ';
-        $title = html::specialEncode($title);
-        
-        template_assets::setTitle($title);
-        template_meta::setMetaAsStr('<meta property="og:title" content="'.$title.'" />' . "\n");
-        
-        $meta = '';
-        // $meta.= content_export_module::getBookExportsStr($book);
-        $meta.= ' ';
-        
-        if (!empty($art['abstract'])) {
-            $meta.= $art['abstract'];
-        } else if (!empty($book['abstract'])) {
-            $meta.= $book['abstract'];
-        } else {
-            $meta.= $book['author'] . MENU_SUB_SEPARATOR_SEC;
-            $meta.= $book['title'] . MENU_SUB_SEPARATOR_SEC;
-            $meta.= $art['title'];
-        }
-        
-        $desc = strings::substr2($meta, 160);
-        $og_desc = html::specialEncode(strings::substr2($meta, 320));
-        $img = new image_module();
-        $row = $img->imageExists($book_id, 'content/cover');
 
-        if (!empty($row)) {
-            $info = $img->getSingleFileInfo($row['id']);            
-            $server = config::getSchemeWithServerName();
-            $path = $server. $img->getFullWebPath($info);
-            template_meta::setMetaAsStr(
-                    '<meta property="og:type" content="book"/>' . "\n");
-            /*
-            template_meta::setMetaAsStr(
-                    '<meta property="book:author" content="'.html::specialEncode($book['author']).'"/>' . "\n");
-            */
-            
-            
-            template_meta::setMetaAsStr(
-                    '<meta property="og:description" content="'.$og_desc.'"/>' . "\n");
-            template_meta::setMetaAsStr(
-                    '<meta property="og:image" content="'.$path.'"/>' . "\n");
-
-        }
-        
-        
-        template_meta::setMeta(array('description' => $desc));
-        return;
-    }
-    
-    /**
-     * 
-     * set meta info in head
-     * @param array $ary
-     */
-    public function setMeta ($yaml, $row) {
-        
-        $desc = strings::substr2($yaml['Subtitle'], 255);
-        $og_desc = html::specialEncode(strings::substr2($yaml['Subtitle'], 320));
-
-        $title = $yaml['title'];
-        template_assets::setTitle($title);
-        template_meta::setMetaAsStr('<meta property="og:title" content="'.html::specialEncode($title).'" />' . "\n");
-        
-        $server = config::getSchemeWithServerName();
-        $image = $server. $row['image'];
-        
-        template_meta::setMetaAsStr(
-                '<meta property="og:type" content="book"/>' . "\n");
-        template_meta::setMetaAsStr(
-                '<meta property="og:description" content="' . $og_desc . '"/>' . "\n");
-        template_meta::setMetaAsStr(
-                '<meta property="og:image" content="' . $image . '"/>' . "\n");
-        template_meta::setMeta(
-                array ('description' => $desc,
-                       'keywords' => $yaml['keywords']));
-    }
 }
-
-        
 
 class gitbook_module extends gitbook{}
