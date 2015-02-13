@@ -69,7 +69,10 @@ class gitbook {
         if ($bean->id) {
             $user_id = session::getUserId();
             $rows = db_q::select('gitrepo')->filter('user_id =', $user_id)->fetch();
-            echo $this->viewRepos($rows, array('options' => '1', 'exports' => 1));
+            echo $this->viewRepos($rows, 
+                    array(
+                        'options' => '1', 
+                        'exports' => 1));
         }
 
         echo $this->viewAddRepo();
@@ -81,10 +84,13 @@ class gitbook {
      */
     public function indexAction() {
         
-        $per_page = 20;
+        $per_page = 10;
         $num_rows = db_q::numRows('gitrepo')->fetch();
         
         $pager = new pagination($num_rows, $per_page);
+        
+        $title = lang::translate('List of books. Page ') . $pager->getPageNum();
+        template_meta::setMetaAll($title);
         
         $rows = db_q::select('gitrepo')->
                 filter('published =', 1)->
@@ -92,8 +98,12 @@ class gitbook {
                 limit($pager->from, $per_page)->
                 fetch();
         
+        
+        
         echo $this->viewRepos($rows);
         echo $pager->getPagerHTML();
+        
+        
     }
 
     /**
@@ -351,8 +361,7 @@ class gitbook {
      * @param type $row
      * @return type
      */
-    public function exportsDirBook($row) {
-        
+    public function exportsUrl($row) {
         return $this->exportsDirWeb($row['id']) . "/" . strings::utf8SlugString($row['name']);
     }
 
@@ -368,7 +377,7 @@ class gitbook {
         $path_full = $this->exportsDir($id);
         $name = $this->repoName($repo['repo']);
         $exports = $this->exportFormatsIni();
-
+        
         $ary = array ();
         foreach ($exports as $export) {
             $file = $path_full . "/$name.$export";
@@ -384,6 +393,7 @@ class gitbook {
                 
             }
         }
+        
         return $ary;
     }
 
@@ -696,24 +706,13 @@ class gitbook {
         $repo_path = $this->repoPath($id);
         $export_path = $this->exportsDir($id);
 
-        $css_path = $repo_path . "/css";
-        if (file_exists($css_path)) {
-            $css_files = $this->globdir($css_path, "/*");
-            $res = $this->checkLegalAssets($css_files, 'css');
-
-            if (!$res) {
-                return false;
-            }
-            $fs = new Filesystem();
-            $fs->mirror($css_path, $export_path . "/css", null, array('delete' => true));
-        }
-
         $image_path = $repo_path . "/images";
         if (file_exists($image_path)) {
             $image_files = $this->globdir($image_path, "/*");
             $res = $this->checkLegalAssets($image_files, 'images');
 
             if (!$res) {
+                echo html::getErrors($this->errors);
                 return false;
             }
             $fs = new Filesystem();
@@ -729,13 +728,14 @@ class gitbook {
      * @return boolean $res 
      */
     public function checkLegalAssets($files, $dir) {
-        $legal = explode(",", config::getModuleIni('gitbook_allow_assets'));
+
         foreach ($files as $file) {
             $file_base = basename($file);
-            $ext = file::getExtension($file_base);
-            if (!in_array($ext, $legal)) {
+            $mime = file::getMime($file);
+            
+            if (!in_array($mime, $this->mime)) {
                 $illegal = "$dir/$file_base";
-                $this->errors[] = lang::translate('You have a file in your css path which is not allowed. Found file: ') . $illegal;
+                $this->errors[] = lang::translate('You have a file in your css path with wrong mime-type. Found file: ') . $illegal;
                 $this->errors[] = lang::translate("Remove it from your repo with: git rm -f ") . $illegal;
                 return false;
             }
@@ -1214,7 +1214,7 @@ EOF;
         }
         
         // check correct url
-        $canon = $this->exportsDirBook($repo);
+        $canon = $this->exportsUrl($repo);
         http::permMovedHeader($canon);
         
         // increment
@@ -1252,9 +1252,10 @@ EOF;
     public function viewHeaderCommon ($repo, $options = array ()) {
         $repo = html::specialEncode($repo);
         
-        $url = $this->exportsDirWeb($repo['id']) . "/" . $repo['name'];
+        $url = $this->exportsUrl($repo);
         $str = '';
 
+        
         $str.= html::createLink($url, html::getHeadline($repo['title']));
         $str.= $repo['subtitle'];
         
