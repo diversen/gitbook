@@ -24,7 +24,6 @@ class gitbook {
      */
     public function coverAction () {
         $id = direct::fragment(2);
-        $yaml = $this->yamlAsAry($id);
         $c = new gitbook_cover();
         $c->create($id);
         echo html::createLink("/books/$id/cover.png", "cover");
@@ -71,7 +70,7 @@ class gitbook {
             $rows = db_q::select('gitrepo')->filter('user_id =', $user_id)->fetch();
             echo $this->viewRepos($rows, 
                     array(
-                        'options' => '1', 
+                        'options' => 1, 
                         'exports' => 1));
         }
 
@@ -102,7 +101,6 @@ class gitbook {
         
         echo $this->viewRepos($rows);
         echo $pager->getPagerHTML();
-        
         
     }
 
@@ -1316,6 +1314,7 @@ EOF;
         if (isset($options['exports'])) {
 
             $ary = $this->exportsArray($repo['id']);
+            unset($ary['html']);
             $str.='<tr>';
             $str.='<td>';
             $str.= lang::translate('Exports: ');
