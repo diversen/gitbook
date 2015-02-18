@@ -3,6 +3,7 @@
 
 // Translation of file /modules/gitbook/module.php
 
+$_COS_LANG_MODULE['List of books. Page '] = 'List of books. Page ';
 $_COS_LANG_MODULE['Delete'] = 'Delete';
 $_COS_LANG_MODULE['Checkout'] = 'Checkout';
 $_COS_LANG_MODULE['Repo files has been purged!'] = 'Repo files has been purged!';
@@ -23,16 +24,16 @@ $_COS_LANG_MODULE['Correct path and re-build. We use a default cover'] = 'Correc
 $_COS_LANG_MODULE['Your cover image does not have the correct type. Allowed types are gif, jpg, jpeg, png'] = 'Your cover image does not have the correct type. Allowed types are gif, jpg, jpeg, png';
 $_COS_LANG_MODULE['Correct image and re-build. We use a default cover'] = 'Correct image and re-build. We use a default cover';
 $_COS_LANG_MODULE['Could not write to file system '] = 'Could not write to file system ';
-$_COS_LANG_MODULE['You have a file in your css path which is not allowed. Found file: '] = 'You have a file in your css path which is not allowed. Found file: ';
+$_COS_LANG_MODULE['You have a file in your css path with wrong mime-type. Found file: '] = 'You have a file in your css path with wrong mime-type. Found file: ';
 $_COS_LANG_MODULE['Found illigal options in <span class="notranslate"><b>format-arguments</b></span>: '] = 'Found illigal options in <span class="notranslate"><b>format-arguments</b></span>: ';
 $_COS_LANG_MODULE['Remove it from <b>meta.yaml</b>'] = 'Remove it from <b>meta.yaml</b>';
 $_COS_LANG_MODULE['You will need to have a title and a cover image when creating MOBI files from Epub files'] = 'You will need to have a title and a cover image when creating MOBI files from Epub files';
 $_COS_LANG_MODULE['Done '] = 'Done ';
-$_COS_LANG_MODULE['Share this using: '] = 'Share this using: ';
 $_COS_LANG_MODULE['Repo URL: '] = 'Repo URL: ';
 $_COS_LANG_MODULE['Edited by: '] = 'Edited by: ';
 $_COS_LANG_MODULE['Cover image: '] = 'Cover image: ';
 $_COS_LANG_MODULE['Options'] = 'Options';
+$_COS_LANG_MODULE['Share this using: '] = 'Share this using: ';
 $_COS_LANG_MODULE['Exports: '] = 'Exports: ';
 $_COS_LANG_MODULE['Add a git repo'] = 'Add a git repo';
 $_COS_LANG_MODULE['Wait while generating site. This may take a minute or two'] = 'Wait while generating site. This may take a minute or two';
