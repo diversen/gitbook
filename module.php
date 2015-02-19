@@ -408,22 +408,25 @@ class gitbook {
         return $all;
     }
 
+    /**
+     * ignore files
+     * @param string $file
+     * @param array $options
+     * @return boolean $res true or false
+     */
     public function ignore($file, $options) {
         $info = pathinfo($file);
-
-            if (in_array($info['basename'], $options['ignore-files'])) {
-                //die('ok');
-                return true;
-        //    }
+        if (in_array($info['basename'], $options['ignore-files'])) {
+            return true;
         }
         return false;
     }
 
     /**
-     * 
-     * @param type $path
-     * @param type $ext
-     * @return type
+     * get files as array
+     * @param string $path
+     * @param string $ext
+     * @return array $ary array of files
      */
     public function getFilesAry($id, $path, $ext) {
 
@@ -1220,7 +1223,10 @@ EOF;
         
         // check correct url
         $canon = $this->exportsUrl($repo);
+        
+        
         http::permMovedHeader($canon);
+        template_meta::setCanonical($canon);
         
         // increment
         $c = new count_module();
