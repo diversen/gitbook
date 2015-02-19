@@ -416,6 +416,9 @@ class gitbook {
      */
     public function ignore($file, $options) {
         $info = pathinfo($file);
+        if (!isset($options['ignore-files'])) {
+            return false;
+        }
         if (in_array($info['basename'], $options['ignore-files'])) {
             return true;
         }
