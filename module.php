@@ -409,8 +409,12 @@ class gitbook {
     }
 
     public function ignore($file, $options) {
-        if (in_array($file, $options)) {
-            return true;
+        $info = pathinfo($file);
+
+            if (in_array($info['basename'], $options['ignore-files'])) {
+                //die('ok');
+                return true;
+        //    }
         }
         return false;
     }
@@ -421,8 +425,9 @@ class gitbook {
      * @param type $ext
      * @return type
      */
-    public function getFilesAry($path, $ext, $options = array()) {
+    public function getFilesAry($id, $path, $ext) {
 
+        $options = $this->yamlAsAry($id);
         $top = $this->globdir($path, $ext);
         $final = array();
 
@@ -768,6 +773,8 @@ format-arguments:
     html: -s -S --template={$template} --chapters --number-sections --toc
     epub: -s -S  --epub-chapter-level=3 --number-sections --toc
     mobi:
+ignore-files:
+
 ...
 EOF;
         return $str;
@@ -857,7 +864,7 @@ EOF;
     public function filesAsStr($id) {
 
         $repo_path = $this->repoPath($id);        
-        $files = $this->getFilesAry($repo_path, "/*.md");
+        $files = $this->getFilesAry($id, $repo_path, "/*.md");
         if (empty($files)) {
             return false;
         }
