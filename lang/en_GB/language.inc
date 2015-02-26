@@ -16,6 +16,7 @@ $_COS_LANG_MODULE['Not a correct repo URL'] = 'Not a correct repo URL';
 $_COS_LANG_MODULE['Repo already exists'] = 'Repo already exists';
 $_COS_LANG_MODULE['URL does not seem to be a git repo. If you know this is a git repo, please try again.'] = 'URL does not seem to be a git repo. If you know this is a git repo, please try again.';
 $_COS_LANG_MODULE['Will now checkout repo'] = 'Will now checkout repo';
+$_COS_LANG_MODULE['yaml error. Yaml file is not used. '] = 'yaml error. Yaml file is not used. ';
 $_COS_LANG_MODULE['Could not move all HTML assets'] = 'Could not move all HTML assets';
 $_COS_LANG_MODULE['Could not checkout repo. Somethings went wrong. Try again later'] = 'Could not checkout repo. Somethings went wrong. Try again later';
 $_COS_LANG_MODULE['Updated repo '] = 'Updated repo ';

@@ -540,6 +540,12 @@ class gitbook {
         }
 
         $options = $this->yamlAsAry($id);
+        if (isset($this->errors['yaml'])) {
+            $lang = lang::translate('yaml error. Yaml file is not used. ');
+            echo html::getErrors($lang);
+            echo html::getErrors($this->errors['yaml']);
+        }
+        
         $formats = $this->exportFormatsReal($options['format-arguments']);
         
         // html
@@ -806,8 +812,14 @@ EOF;
         $yaml = new Parser();
         $file = $this->repoPath($id) . "/meta.yaml";
         
-        if (file_exists($file)) {
-            $values = $yaml->parse(file_get_contents($file));
+        if (file_exists($file)) {  
+            try {
+            
+                $values = $yaml->parse(file_get_contents($file));
+            } catch (Exception $e) {
+                $this->errors['yaml'] = $e->getMessage();
+                $values = $this->yamlDefaultAry();
+            }
             $values = $this->yamlFix($values);
         } else {
             $values = $this->yamlDefaultAry();
