@@ -18,3 +18,6 @@
 repo: option: auto checkout (e.g. once a day) 
 // prevent export of html
 // download of exports / rm html
+
+// temp gone when :
+Notice: Undefined index: html in /home/dennis/www/gittobook.org/modules/gitbook/module.php on line 1266
