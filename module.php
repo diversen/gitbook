@@ -569,7 +569,7 @@ class gitbook {
         }
         
         // epub
-        if (in_array('epub', $formats) && $format == 'epub') {    
+        if (in_array('epub', $formats) && $format == 'epub') {
             $this->pandocCommand($id, 'epub', $options);
             die();
         }
@@ -598,6 +598,7 @@ class gitbook {
             $this->pandocCommand($id, 'texi', $options);
             die();
         }
+        die();
     }
     
     /**
@@ -781,7 +782,7 @@ cover-image: {$cover}
 date: '{$date}'
 # default formats
 format-arguments:
-    pdf: --toc
+    pdf: -s -S --toc
     html: -s -S --template={$template} --chapters --number-sections --toc
     epub: -s -S  --epub-chapter-level=3 --number-sections --toc
     mobi:
@@ -835,10 +836,8 @@ EOF;
      */
     public function yamlFix ($values) {
         $default = $this->yamlDefaultAry();
-        
-
+        return array_merge($default, $values);
         // format-options
-        
         foreach ($default['format-arguments'] as $key => $val) {
             if (isset($values['format-arguments'][$key])) {
                 $default['format-arguments'][$key] = $values['format-arguments'][$key];
@@ -847,6 +846,7 @@ EOF;
             }
         }
         
+        // other values
         foreach ($default as $key => $val) {
             if ($key == 'format-arguments') { 
                 continue;
@@ -857,6 +857,7 @@ EOF;
             }
         }
 
+        print_r($default);
         return $default;
     }
 
