@@ -24,6 +24,3 @@ Notice: Undefined index: html in /home/dennis/www/gittobook.org/modules/gitbook/
 one chapter per html file. Menu
 simpler view of users repos
 epub style
-html body div#nyarlathotep.section.level1 p strong
-
-
