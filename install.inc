@@ -16,8 +16,15 @@ $_INSTALL['MAIN_MENU_ITEM'] = array (
 $_INSTALL['ROUTES'][] = array ('#/books/[0-9]#'=>
     array ('method' => 'gitbook::booksAction',
            'module' => 'gitbook',
-           'controller' => '/gitbook/books')
+           'controller' => '/gitbook/books'),
+
 );
 
+$_INSTALL['ROUTES'][] = array ('#/downloads/[0-9]#'=>
+    array ('method' => 'gitbook::downloadAction',
+           'module' => 'gitbook',
+           'controller' => '/gitbook/downloads'),
+
+);
 $_INSTALL['PUBLIC_CLONE_URL'] = "git://github.com/diversen/gitbook.git";
 $_INSTALL['PRIVATE_CLONE_URL'] = 'git@github.com:diversen/gitbook.git';

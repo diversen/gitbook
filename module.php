@@ -10,9 +10,41 @@ use diversen\html\helpers as html_helpers;
 use diversen\cli\optValid;
 use diversen\pagination;
 use diversen\uri\direct;
-//use diversen\file\string as file_string;
+use diversen\sendfile;
 
 class gitbook {
+    
+    public function downloadAction () {
+        
+        $id = direct::fragment(1);
+        $name = direct::fragment(2);
+        $full = _COS_HTDOCS . "/books/$id/$name";
+        
+        
+        $s = new sendfile();
+        if (!file_exists($full)) {
+            die("no such file");
+        } 
+
+        $info = pathinfo($full);
+        $type = $info['extension'];
+
+        if ($type == 'mobi') {
+            $s->contentType('application/mobi+zip');
+        } 
+
+
+        //$s->throttle(1.0, 4096);
+        
+        // send the file
+        try {
+            $s->send($full);
+        } catch (\Exception $e) {
+            echo $e->getMessage();
+        }
+        die;
+        
+    }
     
     
     public $allowed = array('md', 'jpg', 'gif', 'png');
@@ -373,6 +405,8 @@ class gitbook {
         $repo = $this->get($id);
         $path = $this->exportsDirWeb($id);
         $path_full = $this->exportsDir($id);
+        
+        $controller_path = "/downloads/$id";
         $name = $this->repoName($repo['repo']);
         $exports = $this->exportFormatsIni();
         
@@ -381,14 +415,13 @@ class gitbook {
             $file = $path_full . "/$name.$export";
 
             if (file_exists($file)) {
-                $location = $path . "/$name.$export";
-                
+                //$location = 
                 if (!isset($options['path'])) {
+                    $location = $controller_path . "/$name.$export";
                     $ary[$export]= html::createLink($location, strtoupper($export));
                 } else {
-                    $ary[$export] = $location;
+                    $ary[$export] = $path . "/$name.$export";//$location;
                 }
-                
             }
         }
         
