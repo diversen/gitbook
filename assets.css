@@ -42,3 +42,11 @@ table, th, td {
     max-width: 400px;
     width: 100%;
 }
+
+div#TOC ul li a {
+    font-size: 1.2em;
+}
+
+.toc-section-number {
+    
+}
