@@ -4,9 +4,9 @@ use Symfony\Component\Yaml\Parser;
 use Symfony\Component\Yaml\Dumper;
 use Symfony\Component\Filesystem\Filesystem;
 use diversen\valid;
-use diversen\db\rb as db_rb;
+use diversen\db\rb;
 use diversen\html;
-use diversen\html\helpers as html_helpers;
+use diversen\html\helpers;
 use diversen\cli\optValid;
 use diversen\pagination;
 use diversen\uri\direct;
@@ -45,10 +45,12 @@ class gitbook {
         die;
         
     }
-    
-    
-    public $allowed = array('md', 'jpg', 'gif', 'png');
 
+    /**
+     * allowed mime for html - will be checked when source is moved to
+     * public
+     * @var array $mime 
+     */
     public $mime = ['image/png', 'image/gif', 'image/jpeg', 'image/jpg'];
     
     /**
@@ -65,7 +67,7 @@ class gitbook {
      * connect to database
      */
     public function __construct() {
-        db_rb::connect();
+        rb::connect();
         $css = config::getModulePath('gitbook') . "/assets.css";
         template::setInlineCss($css);
     }
@@ -96,12 +98,13 @@ class gitbook {
             return;
         }
 
-        $bean = db_rb::getBean('gitrepo', 'user_id', session::getUserId());
+        $bean = rb::getBean('gitrepo', 'user_id', session::getUserId());
         if ($bean->id) {
             $user_id = session::getUserId();
             $rows = db_q::select('gitrepo')->filter('user_id =', $user_id)->fetch();
             echo $this->viewRepos($rows, 
                     array(
+                        'admin' => 1,
                         'options' => 1, 
                         'exports' => 1));
         }
@@ -128,8 +131,6 @@ class gitbook {
                 order('hits', 'DESC')->
                 limit($pager->from, $per_page)->
                 fetch();
-        
-        
         
         echo $this->viewRepos($rows);
         echo $pager->getPagerHTML();
@@ -183,13 +184,13 @@ class gitbook {
      */
     public function dbAddRepo() {
         $title = html::specialDecode($_POST['repo']);
-        $bean = db_rb::getBean('gitrepo', 'repo', $title);
+        $bean = rb::getBean('gitrepo', 'repo', $title);
         $bean->uniqid = md5(uniqid('', true));
         $bean->name = $this->repoName($title);
         $bean->repo = $title;
         $bean->date = date::getDateNow(array('hms' => true));
         $bean->user_id = session::getUserId();
-        return db_rb::commitBean($bean);
+        return rb::commitBean($bean);
     }
 
     /**
@@ -223,10 +224,10 @@ class gitbook {
             http::locationHeader('/gitbook/repos', lang::translate('Repo files has been purged. Database entry has been removed!'));
         }
         
-        echo html_helpers::confirmDeleteForm(
+        echo helpers::confirmDeleteForm(
                 'delete_files', lang::translate('Remove git repo and exported files - but leave repo in database'));
         
-        echo html_helpers::confirmDeleteForm(
+        echo helpers::confirmDeleteForm(
                 'delete_all', lang::translate('Remove everything. Be carefull as any links to this repo no longer will be found!'));
     }
 
@@ -255,7 +256,7 @@ class gitbook {
      * @return int $res
      */
     public function updateRow ($id, $values) {
-        return db_rb::updateBean('gitrepo', $id, $values);
+        return rb::updateBean('gitrepo', $id, $values);
     } 
 
     /**
@@ -302,7 +303,7 @@ class gitbook {
         }
 
 
-        $bean = db_rb::getBean('gitrepo', 'repo', $repo);
+        $bean = rb::getBean('gitrepo', 'repo', $repo);
         if ($bean->id) {
             $this->errors['repo'] = lang::translate('Repo already exists');
             return;
@@ -310,14 +311,14 @@ class gitbook {
         
         // without .git
         $no_dot = str_replace('.git', '', $repo);
-        $bean = db_rb::getBean('gitrepo', 'repo', $no_dot);
+        $bean = rb::getBean('gitrepo', 'repo', $no_dot);
         if ($bean->id) {
             $this->errors['repo'] = lang::translate('Repo already exists');
             return;
         }
         
         // with .git
-        $bean = db_rb::getBean('gitrepo', 'repo', $no_dot . ".git");
+        $bean = rb::getBean('gitrepo', 'repo', $no_dot . ".git");
         if ($bean->id) {
             $this->errors['repo'] = lang::translate('Repo already exists');
             return;
@@ -349,7 +350,7 @@ class gitbook {
 
     /**
      * get a preo form db
-     * @param int $id
+     * @param int|array $var search param id or array of search options
      * @return array $repo
      */
     public function get($var) {
@@ -369,10 +370,7 @@ class gitbook {
 
         $repo = $this->get($id);
         $path = $this->repoName($repo['repo']);
-
-        //if ($type == 'file') {
-            $path = _COS_PATH . "/private/gitbook/$id" . "/$path";
-        //}
+        $path = _COS_PATH . "/private/gitbook/$id" . "/$path";
         return $path;
     }
     
@@ -704,7 +702,7 @@ class gitbook {
             die();
         }
         
-        $bean = db_rb::getBean('gitrepo', 'id', $id);
+        $bean = rb::getBean('gitrepo', 'id', $id);
         $bean->subtitle = $yaml['Subtitle'];
         $bean->title = $yaml['title'];
         $bean->image = $image_path; 
@@ -962,7 +960,6 @@ EOF;
                 if (!$ok) {
                     return false;
                 }
-                //$o[$type] = 
                 $o[$type].= $this->pandocAddArgs($id, $type);
                 return $o[$type];//$o[$type];
             }
@@ -1019,10 +1016,12 @@ EOF;
             'toc' => null,
             // Specify the number of section levels to include in the table of contents. The default is 3
             'toc-depth' => null,
+            
+            // no highlight of language
+            'no-highlight' => null,
             // Options are pygments (the default), kate, monochrome, espresso, zenburn, haddock, and tango.
+            
             'highlight-style' => null,
-            // Produce a standalone HTML file with no external dependencies
-            'self-contained' => null,
             // Produce HTML5 instead of HTML4. 
             'html5' => null,
             // Treat top-level headers as chapters in LaTeX, ConTeXt, and DocBook output.
@@ -1317,6 +1316,7 @@ EOF;
 
         
         $str.= html::createLink($url, html::getHeadline($repo['title']));
+        
         $str.= $repo['subtitle'];
         
         $str.= '<table class="gb_table">'; 
@@ -1331,11 +1331,11 @@ EOF;
         
         $str.='<tr>';
         $str.='<td>';
-        $p = new userinfo_module();
+
         $str.= lang::translate('Edited by: ');
         $str.='</td>';
         $str.='<td>';
-        $str.= $p->getLink($repo['user_id']);
+        $str.= user::getProfileLink($repo['user_id']); 
         $str.='</td>';
         $str.='</tr>';
         
@@ -1350,6 +1350,10 @@ EOF;
         $str.='</tr>';
         
 
+        if (user::ownID('gitrepo', $repo['id'], session::getUserId())) {
+            $options['options'] = 1;
+        }
+        
         if (isset($options['options'])) {
             $str.='<tr>';
             $str.='<td>';
