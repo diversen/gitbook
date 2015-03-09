@@ -1,9 +1,9 @@
 <?php
 
-$allow = config::getModuleIni('gitbook_allow');
+$allow = config::getModuleIni('gittobook_allow');
 $_MODULE_MENU[] = array(
     'title' => lang::translate('Your repos'),
-    'url' => '/gitbook/repos',
+    'url' => '/gittobook/repos',
     'allow' => $allow,
     'auth' => 'user'
 );

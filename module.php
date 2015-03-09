@@ -13,7 +13,7 @@ use diversen\uri\direct;
 use diversen\sendfile;
 
 
-class gitbook {
+class gittobook {
     
     public function downloadAction () {
         
@@ -60,7 +60,7 @@ class gitbook {
      */
     public function coverAction () {
         $id = direct::fragment(2);
-        $c = new gitbook_cover();
+        $c = new gittobook_cover();
         $c->create($id);
         echo html::createLink("/books/$id/cover.png", "cover");
     }
@@ -70,7 +70,7 @@ class gitbook {
      */
     public function __construct() {
         rb::connect();
-        $css = config::getModulePath('gitbook') . "/assets.css";
+        $css = config::getModulePath('gittobook') . "/assets.css";
         template::setInlineCss($css);
     }
 
@@ -92,7 +92,7 @@ class gitbook {
 
     /*
      * display all user repos
-     * action for /gitbook/repos
+     * action for /gittobook/repos
      */
 
     public function reposAction() {
@@ -174,9 +174,9 @@ class gitbook {
     public function optionsRepo($row) {
 
         $str = '';
-        $str.= html::createLink("/gitbook/delete?id=$row[id]&delete=1", lang::translate('Delete'));
+        $str.= html::createLink("/gittobook/delete?id=$row[id]&delete=1", lang::translate('Delete'));
         $str.= MENU_SUB_SEPARATOR;
-        $str.= html::createLink("/gitbook/checkout?id=$row[id]", lang::translate('Checkout'));
+        $str.= html::createLink("/gittobook/checkout?id=$row[id]", lang::translate('Checkout'));
         return $str;
     }
 
@@ -216,14 +216,14 @@ class gitbook {
             $this->deletePublicFiles($_GET['id']);
             $this->repoDeleteFiles($_GET['id']);
             $this->updateRow($_GET['id'], array('published' => 0));
-            http::locationHeader('/gitbook/repos', lang::translate('Repo files has been purged!'));
+            http::locationHeader('/gittobook/repos', lang::translate('Repo files has been purged!'));
         }
         
         if (isset($_POST['delete_all'])) {
             $this->deletePublicFiles($_GET['id']);
             $this->repoDeleteFiles($_GET['id']);
             $this->deleteRow($_GET['id']);
-            http::locationHeader('/gitbook/repos', lang::translate('Repo files has been purged. Database entry has been removed!'));
+            http::locationHeader('/gittobook/repos', lang::translate('Repo files has been purged. Database entry has been removed!'));
         }
         
         echo helpers::confirmDeleteForm(
@@ -342,7 +342,7 @@ class gitbook {
             $this->validateRepo();
             if (empty($this->errors)) {
                 $res = $this->dbAddRepo();
-                http::locationHeader("/gitbook/checkout?id=$res", lang::translate('Will now checkout repo'));
+                http::locationHeader("/gittobook/checkout?id=$res", lang::translate('Will now checkout repo'));
             } else {
                 echo html::getErrors($this->errors);
             }
@@ -372,7 +372,7 @@ class gitbook {
 
         $repo = $this->get($id);
         $path = $this->repoName($repo['repo']);
-        $path = _COS_PATH . "/private/gitbook/$id" . "/$path";
+        $path = _COS_PATH . "/private/gittobook/$id" . "/$path";
         return $path;
     }
     
@@ -527,23 +527,23 @@ class gitbook {
             });
 
             
-            $.get("/gitbook/ajax?id=<?= $id ?>&format=files", function (data) {
+            $.get("/gittobook/ajax?id=<?= $id ?>&format=files", function (data) {
                 $('.loader_message').append(data);
             });
             
-            $.get("/gitbook/ajax?id=<?= $id ?>&format=html", function (data) {
+            $.get("/gittobook/ajax?id=<?= $id ?>&format=html", function (data) {
                 $('.loader_message').append(data);
             });
             
-            $.get("/gitbook/ajax?id=<?= $id ?>&format=epub", function (data) {
+            $.get("/gittobook/ajax?id=<?= $id ?>&format=epub", function (data) {
                 $('.loader_message').append(data);
             });
             
-            $.get("/gitbook/ajax?id=<?= $id ?>&format=mobi", function (data) {
+            $.get("/gittobook/ajax?id=<?= $id ?>&format=mobi", function (data) {
                 $('.loader_message').append(data);
             });
             
-            $.get("/gitbook/ajax?id=<?= $id ?>&format=pdf", function (data) {
+            $.get("/gittobook/ajax?id=<?= $id ?>&format=pdf", function (data) {
                 $('.loader_message').append(data);
             });
             
@@ -661,7 +661,7 @@ class gitbook {
         
         // generate cover
         $yaml = $this->yamlAsAry($id);
-        $c = new gitbook_cover();
+        $c = new gittobook_cover();
         if ($yaml['cover-image'] == 'Not set') {
             $c->create($id);
             $cover_image = _COS_HTDOCS . "/books/$id/cover.png"; 
@@ -715,11 +715,11 @@ class gitbook {
 
 
     /**
-     * return gitbook.ini gitbook_exports as array
+     * return gittobook.ini gittobook_exports as array
      * @return array $ary exports from ini
      */
     public function exportFormatsIni() {
-        $exports = config::getModuleIni('gitbook_exports');
+        $exports = config::getModuleIni('gittobook_exports');
         return explode(",", $exports);
     }
     
@@ -798,8 +798,8 @@ class gitbook {
      */
     public function yamlDefaultStr () {
         $date = date::getDateNow();
-        $cover = 'Not set'; /* config::getModulePath('gitbook') . "/images/cover.jpg"; */
-        $template = config::getModulePath('gitbook') . "/templates/body.html";
+        $cover = 'Not set'; /* config::getModulePath('gittobook') . "/images/cover.jpg"; */
+        $template = config::getModulePath('gittobook') . "/templates/body.html";
         $str = <<<EOF
 ---
 title: Untitled
@@ -978,7 +978,7 @@ EOF;
     public function pandocAddArgs ($id, $type) {
         $str ='';
         if ($type == 'html') {
-            $template = config::getModulePath('gitbook') . "/templates/body.html";
+            $template = config::getModulePath('gittobook') . "/templates/body.html";
             $str.= " --template=$template -t html5 ";
         }
         
@@ -1250,7 +1250,7 @@ EOF;
      */
     public function repoCheckoutPath($repo) {
 
-        $path = _COS_PATH . "/private/gitbook/" . $repo['id'];
+        $path = _COS_PATH . "/private/gittobook/" . $repo['id'];
         if (!file_exists($path)) {
             mkdir($path, 0777, true);
         }
@@ -1368,7 +1368,7 @@ EOF;
         }
         
         if (isset($options['share'])) {
-            $s = new gitbook_share();
+            $s = new gittobook_share();
             $str.= '<tr>';
             $str.= '<td>';
             $str.= lang::translate('Share this using: ');
@@ -1398,4 +1398,4 @@ EOF;
 
 }
 
-class gitbook_module extends gitbook{}
+class gittobook_module extends gittobook{}

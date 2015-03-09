@@ -2,7 +2,7 @@
 
 
 
-class gitbook_share {
+class gittobook_share {
 
     public function getShareString($title, $description) {
         $url = config::getSchemeWithServerName();

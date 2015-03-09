@@ -1,7 +1,7 @@
 <?php
 
 
-// Translation of file /modules/gitbook/module.php
+// Translation of file /modules/gittobook/module.php
 
 $_COS_LANG_MODULE['List of books. Page '] = 'List of books. Page ';
 $_COS_LANG_MODULE['Delete'] = 'Delete';

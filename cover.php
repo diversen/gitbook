@@ -7,7 +7,7 @@ use GDText\Box;
 use GDText\Color;
 use Gregwar\Image\Image;
 
-class gitbook_cover extends gitbook {
+class gittobook_cover extends gittobook {
 
     public function create($id) {
 
@@ -21,7 +21,7 @@ class gitbook_cover extends gitbook {
 
         $box = new Box($im);
 
-        $font = config::getModulePath('gitbook') . "/fonts/OpenSans-Bold.ttf";
+        $font = config::getModulePath('gittobook') . "/fonts/OpenSans-Bold.ttf";
 
         $box->setFontFace($font); // http://www.dafont.com/franchise.font
         $box->setFontColor(new Color(0, 0, 0));
@@ -35,7 +35,7 @@ class gitbook_cover extends gitbook {
                 $title
         );
 
-        $font = config::getModulePath('gitbook') . "/fonts/OpenSans-Regular.ttf";
+        $font = config::getModulePath('gittobook') . "/fonts/OpenSans-Regular.ttf";
 
         $box->setFontFace($font); // http://www.dafont.com/franchise.font
         $box->setFontColor(new Color(33, 33, 33));
@@ -53,7 +53,7 @@ class gitbook_cover extends gitbook {
         }
 
         $authors = mb_substr($authors, 0, 255);
-        $font = config::getModulePath('gitbook') . "/fonts/OpenSans-Bold.ttf";
+        $font = config::getModulePath('gittobook') . "/fonts/OpenSans-Bold.ttf";
 
         $box->setFontFace($font); // http://www.dafont.com/franchise.font
         $box->setFontColor(new Color(33, 33, 33));
