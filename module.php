@@ -12,6 +12,7 @@ use diversen\pagination;
 use diversen\uri\direct;
 use diversen\sendfile;
 
+
 class gitbook {
     
     public function downloadAction () {
@@ -52,6 +53,7 @@ class gitbook {
      * @var array $mime 
      */
     public $mime = ['image/png', 'image/gif', 'image/jpeg', 'image/jpg'];
+    
     
     /**
      * test action for creating a cover
