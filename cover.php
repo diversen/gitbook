@@ -87,6 +87,6 @@ class gittobook_cover extends gittobook {
             scaleResize(1800 / 2, 2400 / 2, $bg)->
             save($save);
         
-        return _COS_HTDOCS . "/books/$id/assets/scaled-" . $parts['basename'];
+        return "/books/$id/assets/scaled-" . $parts['basename'];
     }
 }

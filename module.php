@@ -701,7 +701,7 @@ class gittobook {
         }
         
         $image_path = $c->scale($id, $cover_image);
-        $yaml['cover-image'] = $image_path;
+        $yaml['cover-image'] = _COS_HTDOCS  . "$image_path";
         
         // generate yaml meta in exports
         $yaml_res = $this->yamlExportsMeta($id, $yaml);
