@@ -523,31 +523,44 @@ class gittobook {
         <script type="text/javascript">
 
             $.ajaxSetup({
-                async:false
+                async:true
+            });
+            
+            var $loading = $('.loader_gif').hide();
+            $(document).ajaxStart(function () {
+                $loading.show();
+            }).ajaxStop(function () {
+                $loading.hide();
             });
 
             
-            $.get("/gittobook/ajax?id=<?= $id ?>&format=files", function (data) {
+            var files = $.get("/gittobook/ajax?id=<?= $id ?>&format=files", function (data) {
                 $('.loader_message').append(data);
             });
             
-            $.get("/gittobook/ajax?id=<?= $id ?>&format=html", function (data) {
-                $('.loader_message').append(data);
+            files.done(function () {
+                $.get("/gittobook/ajax?id=<?= $id ?>&format=html", function (data) {
+                    $('.loader_message').append(data);
+                });
+                
+                var epub = $.get("/gittobook/ajax?id=<?= $id ?>&format=epub", function (data) {
+                    $('.loader_message').append(data);
+                });
+                
+                epub.done(function() {
+                    $.get("/gittobook/ajax?id=<?= $id ?>&format=mobi", function (data) {
+                        $('.loader_message').append(data);
+                    });
+                });
             });
             
-            $.get("/gittobook/ajax?id=<?= $id ?>&format=epub", function (data) {
-                $('.loader_message').append(data);
+            
+            files.done(function () {
+                $.get("/gittobook/ajax?id=<?= $id ?>&format=pdf", function (data) {
+                    $('.loader_message').append(data);
+                });
             });
             
-            $.get("/gittobook/ajax?id=<?= $id ?>&format=mobi", function (data) {
-                $('.loader_message').append(data);
-            });
-            
-            $.get("/gittobook/ajax?id=<?= $id ?>&format=pdf", function (data) {
-                $('.loader_message').append(data);
-            });
-            
-            $('.loader_gif').hide();
         </script>
         <?php
     }
