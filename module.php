@@ -683,6 +683,7 @@ class gittobook {
         }
         
         if (!file_exists($cover_image)) {
+            //echo "does not exists";
             $error = lang::translate('Cover file does not exists in repo: ') . $yaml['cover-image'] . ". "; 
             $error.= lang::translate('Correct path and re-build. We use a default cover');
             echo html::getError($error);
@@ -700,7 +701,7 @@ class gittobook {
         }
         
         $image_path = $c->scale($id, $cover_image);
-        $yaml['cover-image'] = $cover_image;
+        $yaml['cover-image'] = $image_path;
         
         // generate yaml meta in exports
         $yaml_res = $this->yamlExportsMeta($id, $yaml);
@@ -1311,10 +1312,14 @@ EOF;
                 $yaml['title'], $yaml['Subtitle'], $yaml['keywords'], $repo['image'], 'book');
         
         $exports = $this->exportsArray($repo['id'], array('path' => true));
-        $path = _COS_HTDOCS . "/$exports[html]";
-        $str.= file_get_contents($path);
+        if (isset($exports['html'])) {
+            $path = _COS_HTDOCS . "/$exports[html]";
+            if (file_exists($path)) {
+                $str.= file_get_contents($path);
+                
+            }
+        }
         echo $str;
-
     }
     
     /**
