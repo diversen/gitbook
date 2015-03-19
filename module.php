@@ -54,6 +54,11 @@ class gittobook {
      */
     public $mime = ['image/png', 'image/gif', 'image/jpeg', 'image/jpg'];
     
+    public function testAction () {
+        $a = session::getAccount(session::getUserId());
+        print_r($a);
+        print_r($_SESSION);
+    }
     
     /**
      * test action for creating a cover
@@ -1329,6 +1334,8 @@ EOF;
      * @return string $html
      */
     public function viewHeaderCommon ($repo, $options = array ()) {
+        
+        
         $repo = html::specialEncode($repo);
         
         $url = $this->exportsUrl($repo);
@@ -1336,6 +1343,9 @@ EOF;
 
         
         $str.= html::createLink($url, html::getHeadline($repo['title']));
+        if (isset($options['admin'])) {
+            return $str;
+        }
         
         $str.= $repo['subtitle'];
         
