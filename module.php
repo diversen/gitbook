@@ -547,7 +547,7 @@ class gittobook {
                     $('.loader_message').append(data);
                 });
                 
-                $.get("/gittobook/ajax?id=<?= $id ?>&format=html-split", function (data) {
+                $.get("/gittobook/ajax?id=<?= $id ?>&format=html-chunked", function (data) {
                     $('.loader_message').append(data);
                 });
                 
@@ -610,8 +610,9 @@ class gittobook {
             if ($res) {
                 $this->updateRow($id, array('published' => 0));
                 die();
-                //return false;
+
             }
+            
             // html not self-contained
             $res = $this->moveAssets($id, 'html', $options);
             if (!$res) {
@@ -623,7 +624,7 @@ class gittobook {
         }
         
         // html
-        if (in_array('html-split', $formats) && $format == 'html-split') {
+        if (in_array('html-chunked', $formats) && $format == 'html-chunked') {
 
             $files = $this->getFilesAry($id, '/*.md');
             $repo_path = $this->repoPath($id);
@@ -638,7 +639,7 @@ class gittobook {
                 $command = "cd $repo_path && ";
 
                 // add base flags
-                $base_flags = $this->pandocArgs($id, 'html', $options);
+                $base_flags = $this->pandocArgs($id, 'html-chunked', $options);
                 $command.= "pandoc $base_flags ";
                 $command.= "-o $export_file ";
                 $command.=$file . " 2>&1";
@@ -658,6 +659,14 @@ class gittobook {
             $save_menu = $this->exportsDirFull($id) . "/menu.html";
             file_put_contents($save_menu, $menu);
 
+            // html not self-contained
+            $res = $this->moveAssets($id, 'html', $options);
+            if (!$res) {
+                $this->errors[] = lang::translate('Could not move all HTML assets');
+            } else {
+                $this->updateRow($id, array('published' => 1));
+            }
+            
             
             if (!$ret) {
                 echo lang::translate("Done ") . "html (chunked)" . "<br/>";
@@ -1383,19 +1392,12 @@ EOF;
             moduleloader::setStatus(404);
             return false;
         }
-        
-        /*
-        if (!file_exists($html_file)) {
-            moduleloader::setStatus(404);
-            return false;
-        }*/
-        
-        
+         
         // check correct url
-        $canon = $this->exportsUrl($repo);
+        $main_url = $this->exportsUrl($repo);
+        //echo strings::utf8SlugString($repo['name']);
         
-        //http::permMovedHeader($canon);
-        template_meta::setCanonical($canon);
+        
         
         // increment
         $c = new count_module();
@@ -1406,7 +1408,6 @@ EOF;
         
         if (isset($yaml['language'])) {
             config::setMainIni('lang', $yaml['language']);
-            // lang::loadLanguage('zh');
         }
         
         $str = '';
@@ -1418,29 +1419,38 @@ EOF;
         
         
         // chunked precede single html document
-        $menu_html = _COS_HTDOCS . "/books/$id/menu.html";
-        if (file_exists($menu_html)) {
-            $str.= file_get_contents($menu_html);    
-        }
+        if (isset($yaml['format-arguments']['html-chunked'])) {
         
+            $menu_html = _COS_HTDOCS . "/books/$id/menu.html";
+            if (file_exists($menu_html)) {
+                $str.= file_get_contents($menu_html);    
+            }
+
+            if ($repo['name'] != $file) {
+                if (file_exists($html_file)) {
+                    $str.= file_get_contents($html_file);
+                } else {
+                    http::permMovedHeader($main_url);
+                }
+            }
+            echo $str;
+            return;
+        }
+
+        // html single
+        http::permMovedHeader($main_url);
+                template_meta::setCanonical($main_url);
         if (file_exists($html_file)) {
             if (file_exists($html_file)) {
                 $str.= file_get_contents($html_file);
-            }
-        }
-        
-        echo $str;    
-        //echo $str;
-        
-        /*
-        if (isset($exports['html'])) {
-            $path = _COS_HTDOCS . "/$exports[html]";
-            if (file_exists($path)) {
-                $str.= file_get_contents($path);
+            } else {
                 
             }
-        }*/
-        //echo $str;
+            echo $str;
+            
+        }
+        
+        
     }
     
     /**

@@ -47,6 +47,11 @@ div#TOC ul li a {
     font-size: 1.2em;
 }
 
+div#TOC ul li a:active {
+    color: #000;
+    font-size: 1.2em;
+}
+
 .toc-section-number {
     
 }
