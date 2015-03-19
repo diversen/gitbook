@@ -54,10 +54,10 @@ class gittobook {
      */
     public $mime = ['image/png', 'image/gif', 'image/jpeg', 'image/jpg'];
     
+    
     public function testAction () {
-        $a = session::getAccount(session::getUserId());
-        print_r($a);
-        print_r($_SESSION);
+        $file = '/home/dennis/www/gitbook/htdocs/books/54/06-profeternes-paradis.html';
+        echo file_get_contents($file);
     }
     
     /**
@@ -220,7 +220,7 @@ class gittobook {
         if (isset($_POST['delete_files'])) {
             $this->deletePublicFiles($_GET['id']);
             $this->repoDeleteFiles($_GET['id']);
-            $this->updateRow($_GET['id'], array('published' => 0));
+            $this->updateRow($_GET['id'], array('published' => 1));
             http::locationHeader('/gittobook/repos', lang::translate('Repo files has been purged!'));
         }
         
@@ -429,7 +429,6 @@ class gittobook {
                 }
             }
         }
-        
         return $ary;
     }
 
@@ -469,8 +468,8 @@ class gittobook {
      * @param string $ext
      * @return array $ary array of files
      */
-    public function getFilesAry($id, $path, $ext) {
-
+    public function getFilesAry($id, $ext) {
+        $path = $this->repoPath($id); 
         $options = $this->yamlAsAry($id);
         $top = $this->globdir($path, $ext);
         $final = array();
@@ -548,6 +547,10 @@ class gittobook {
                     $('.loader_message').append(data);
                 });
                 
+                $.get("/gittobook/ajax?id=<?= $id ?>&format=html-split", function (data) {
+                    $('.loader_message').append(data);
+                });
+                
                 var epub = $.get("/gittobook/ajax?id=<?= $id ?>&format=epub", function (data) {
                     $('.loader_message').append(data);
                 });
@@ -619,6 +622,48 @@ class gittobook {
             die();
         }
         
+        // html
+        if (in_array('html-split', $formats) && $format == 'html-split') {
+
+            $files = $this->getFilesAry($id, '/*.md');
+            $repo_path = $this->repoPath($id);
+            
+            $ret = 0;
+            foreach($files as $file) {
+            
+                // get export file name and create dirs
+                $info = pathinfo($file);
+                $export_file = $this->exportsDirFull($id) . "/$info[filename].html";
+                
+                $command = "cd $repo_path && ";
+
+                // add base flags
+                $base_flags = $this->pandocArgs($id, 'html', $options);
+                $command.= "pandoc $base_flags ";
+                $command.= "-o $export_file ";
+                $command.=$file . " 2>&1";
+                $output = array();
+                exec($command, $output, $ret);
+                if ($ret) {
+                    echo lang::translate("Failed to create export of type: ") . "html (chunks)" . "<br />";
+                    echo html::getErrors($output);
+                    log::error($command);
+                    log::error($output);
+                    break;
+                } 
+            }
+
+            
+            $menu = $this->generateMenu($id, $files);
+            $save_menu = $this->exportsDirFull($id) . "/menu.html";
+            file_put_contents($save_menu, $menu);
+
+            
+            if (!$ret) {
+                echo lang::translate("Done ") . "html (chunked)" . "<br/>";
+            }
+        }
+        
         // epub
         if (in_array('epub', $formats) && $format == 'epub') {
             $this->pandocCommand($id, 'epub', $options);
@@ -650,6 +695,40 @@ class gittobook {
             die();
         }
         die();
+    }
+    
+    /**
+     * generates a html menu from md files
+     * @param type $files
+     */
+    public function generateMenu ($id, $files) {
+
+        $str = '<div id="TOC"><ul>';        
+        foreach ($files as $file) {
+
+            $f = fopen($file, 'r');
+            $line = fgets($f);
+            $line = trim($line);
+            fclose($f);
+            
+            $str.='<li>';
+            $title = str_replace('#', '', $line);
+            $str.= $this->generateMenuLink($id, $file, $title);
+
+            $str.='</li>';
+        }
+        $str.= '</ul></div>';
+        return $str;
+    }
+    
+    public function generateMenuLink ($id, $file, $title) {
+        
+        $info = pathinfo($file);
+        if (empty($title)) {
+            $title = $info[filename];
+        }
+        $url = "/books/$id/$info[filename]";
+        return html::createLink($url, $title);
     }
     
     /**
@@ -818,7 +897,8 @@ class gittobook {
     public function yamlDefaultStr () {
         $date = date::getDateNow();
         $cover = 'Not set'; /* config::getModulePath('gittobook') . "/images/cover.jpg"; */
-        $template = config::getModulePath('gittobook') . "/templates/body.html";
+        $template = config::getModulePath('gittobook') . "/templates/template.html";
+        $chunked = config::getModulePath('gittobook') . "/templates/chunked.html";
         $str = <<<EOF
 ---
 title: Untitled
@@ -836,6 +916,7 @@ date: '{$date}'
 format-arguments:
     pdf: -s -S --toc
     html: -s -S --template={$template} --chapters --number-sections --toc
+    html-chunked: -s -S --template={$chunked} --chapters --number-sections --toc
     epub: -s -S  --epub-chapter-level=3 --number-sections --toc
     mobi:
 ignore-files:
@@ -934,8 +1015,8 @@ EOF;
      */
     public function filesAsStr($id) {
 
-        $repo_path = $this->repoPath($id);        
-        $files = $this->getFilesAry($id, $repo_path, "/*.md");
+               
+        $files = $this->getFilesAry($id,  "/*.md");
         if (empty($files)) {
             return false;
         }
@@ -997,7 +1078,12 @@ EOF;
     public function pandocAddArgs ($id, $type) {
         $str ='';
         if ($type == 'html') {
-            $template = config::getModulePath('gittobook') . "/templates/body.html";
+            $template = config::getModulePath('gittobook') . "/templates/template.html";
+            $str.= " --template=$template -t html5 ";
+        }
+        
+        if ($type == 'html-chunked') {
+            $template = config::getModulePath('gittobook') . "/templates/chunked.html";
             $str.= " --template=$template -t html5 ";
         }
         
@@ -1126,8 +1212,10 @@ EOF;
 
         exec($command, $output, $ret);
         if ($ret) {
-            $error = lang::translate('You will need to have a title and a cover image when creating MOBI files from Epub files');
-            echo html::getError($error);
+            $errors = array ();
+            $errors[] = lang::translate('You will need to have a title and a cover image when creating MOBI files from Epub files');
+            $errors[] = lang::translate('All image paths needs to be correct when creating the MOBI file.');
+            echo html::getErrors($errors);
             log::error($command);
             return $ret;
         }
@@ -1284,17 +1372,29 @@ EOF;
         
         // get repo id
         $id = direct::fragment(1);
+        
+        // get file name
+        $file = rawurldecode(direct::fragment(2));
+        $html_file = _COS_HTDOCS . "/books/$id/$file.html";
+        
+        // check if repo is published
         $repo = $this->get(array('published =' => 1, 'id =' => $id));
         if (empty($repo)) {
             moduleloader::setStatus(404);
             return false;
         }
         
+        /*
+        if (!file_exists($html_file)) {
+            moduleloader::setStatus(404);
+            return false;
+        }*/
+        
+        
         // check correct url
         $canon = $this->exportsUrl($repo);
         
-        
-        http::permMovedHeader($canon);
+        //http::permMovedHeader($canon);
         template_meta::setCanonical($canon);
         
         // increment
@@ -1316,15 +1416,31 @@ EOF;
         template_meta::setMetaAll(
                 $yaml['title'], $yaml['Subtitle'], $yaml['keywords'], $repo['image'], 'book');
         
-        $exports = $this->exportsArray($repo['id'], array('path' => true));
+        
+        // chunked precede single html document
+        $menu_html = _COS_HTDOCS . "/books/$id/menu.html";
+        if (file_exists($menu_html)) {
+            $str.= file_get_contents($menu_html);    
+        }
+        
+        if (file_exists($html_file)) {
+            if (file_exists($html_file)) {
+                $str.= file_get_contents($html_file);
+            }
+        }
+        
+        echo $str;    
+        //echo $str;
+        
+        /*
         if (isset($exports['html'])) {
             $path = _COS_HTDOCS . "/$exports[html]";
             if (file_exists($path)) {
                 $str.= file_get_contents($path);
                 
             }
-        }
-        echo $str;
+        }*/
+        //echo $str;
     }
     
     /**

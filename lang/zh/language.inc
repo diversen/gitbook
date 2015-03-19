@@ -26,6 +26,7 @@ $_COS_LANG_MODULE['You have a file in your css path with wrong mime-type. Found 
 $_COS_LANG_MODULE['Found illigal options in <span class="notranslate"><b>format-arguments</b></span>: '] = '发现illigal选项<b><span class="notranslate">format-arguments</span></b> ：';
 $_COS_LANG_MODULE['Remove it from <b>meta.yaml</b>'] = '从<b>meta.yaml</b>删除它';
 $_COS_LANG_MODULE['You will need to have a title and a cover image when creating MOBI files from Epub files'] = '您将需要从EPUB文件创建MOBI文件时有一个标题和封面图片';
+$_COS_LANG_MODULE['All image paths needs to be correct when creating the MOBI file.'] = '所有图像路径需要创建MOBI文件时是正确的。';
 $_COS_LANG_MODULE['Done '] = 'DONE';
 $_COS_LANG_MODULE['Repo URL: '] = '回购网址：';
 $_COS_LANG_MODULE['Edited by: '] = '编辑按：';
