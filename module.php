@@ -18,33 +18,37 @@ class gittobook {
     public function downloadAction () {
         
         $id = direct::fragment(1);
-        $name = direct::fragment(2);
-        $full = _COS_HTDOCS . "/books/$id/$name";
         
+        $repo = $this->get($id);
+        $user_owns = user::ownID('gitrepo', $repo['id'], session::getUserId());
+        if ($user_owns OR !$repo['private']) {
+            
+            $name = direct::fragment(2);
+            $full = _COS_HTDOCS . "/books/$id/$name";
+
+            $s = new sendfile();
+
+            $info = pathinfo($full);
+            $type = $info['extension'];
+
+            if ($type == 'mobi') {
+                $s->contentType('application/mobi+zip');
+            } 
+
+            try {
+                $s->send($full);
+            } catch (\Exception $e) {
+                moduleloader::setStatus(404);
+                return false;
+            }
+            die;
+        } else {
+            //if ($repo['published'] == 0 && !$user_owns) {
+                moduleloader::setStatus(404);
+                return false;
+            //}
         
-        $s = new sendfile();
-        if (!file_exists($full)) {
-            die("no such file");
-        } 
-
-        $info = pathinfo($full);
-        $type = $info['extension'];
-
-        if ($type == 'mobi') {
-            $s->contentType('application/mobi+zip');
-        } 
-
-
-        //$s->throttle(1.0, 4096);
-        
-        // send the file
-        try {
-            $s->send($full);
-        } catch (\Exception $e) {
-            echo $e->getMessage();
         }
-        die;
-        
     }
 
     /**
@@ -197,6 +201,7 @@ class gittobook {
         $bean->repo = $title;
         $bean->date = date::getDateNow(array('hms' => true));
         $bean->user_id = session::getUserId();
+        $bean->published = 1;
         return rb::commitBean($bean);
     }
 
@@ -220,14 +225,14 @@ class gittobook {
         if (isset($_POST['delete_files'])) {
             $this->deletePublicFiles($_GET['id']);
             $this->repoDeleteFiles($_GET['id']);
-            $this->updateRow($_GET['id'], array('published' => 1));
+            $this->dbUpdateRepo($_GET['id'], array('published' => 0));
             http::locationHeader('/gittobook/repos', lang::translate('Repo files has been purged!'));
         }
         
         if (isset($_POST['delete_all'])) {
             $this->deletePublicFiles($_GET['id']);
             $this->repoDeleteFiles($_GET['id']);
-            $this->deleteRow($_GET['id']);
+            $this->dbDeleteRepo($_GET['id']);
             http::locationHeader('/gittobook/repos', lang::translate('Repo files has been purged. Database entry has been removed!'));
         }
         
@@ -262,7 +267,7 @@ class gittobook {
      * @param array $values
      * @return int $res
      */
-    public function updateRow ($id, $values) {
+    public function dbUpdateRepo ($id, $values) {
         return rb::updateBean('gitrepo', $id, $values);
     } 
 
@@ -271,7 +276,7 @@ class gittobook {
      * @param int $id
      * @return int $res
      */
-    public function deleteRow($id) {
+    public function dbDeleteRepo($id) {
         return $res = db_q::delete('gitrepo')->filter('id =', $id)->exec();
     }
 
@@ -420,7 +425,6 @@ class gittobook {
             $file = $path_full . "/$name.$export";
 
             if (file_exists($file)) {
-                //$location = 
                 if (!isset($options['path'])) {
                     $location = $controller_path . "/$name.$export";
                     $ary[$export]= html::createLink($location, strtoupper($export));
@@ -530,6 +534,7 @@ class gittobook {
                 async:true
             });
             
+            
             var $loading = $('.loader_gif').hide();
             $(document).ajaxStart(function () {
                 $loading.show();
@@ -540,6 +545,10 @@ class gittobook {
             
             var files = $.get("/gittobook/ajax?id=<?= $id ?>&format=files", function (data) {
                 $('.loader_message').append(data);
+            });
+            
+            files.fail(function() {
+                alert( "error" );
             });
             
             files.done(function () {
@@ -594,6 +603,7 @@ class gittobook {
         }
 
         $options = $this->yamlAsAry($id);
+        $db_values = ['private' => $options['private']];
         if (isset($this->errors['yaml'])) {
             $lang = lang::translate('yaml error. Yaml file is not used. ');
             echo html::getErrors($lang);
@@ -606,11 +616,11 @@ class gittobook {
         if (in_array('html', $formats) && $format == 'html') {
             
             // run pandoc
-            $res = $this->pandocCommand($id, 'html', $options);
-            if ($res) {
-                $this->updateRow($id, array('published' => 0));
+            $ret = $this->pandocCommand($id, 'html', $options);
+            if ($ret) {
+                $db_values['published'] = 0;
+                $this->dbUpdateRepo($id, $db_values);
                 die();
-
             }
             
             // html not self-contained
@@ -618,7 +628,8 @@ class gittobook {
             if (!$res) {
                 $this->errors[] = lang::translate('Could not move all HTML assets');
             } else {
-                $this->updateRow($id, array('published' => 1));
+                $db_values['published'] = 1;
+                $this->dbUpdateRepo($id, $db_values);
             }
             die();
         }
@@ -660,7 +671,13 @@ class gittobook {
                     break;
                 } 
             }
-
+            
+            if ($ret) {
+                $db_values['published'] = 1;
+                $this->dbUpdateRepo($id, $db_values);
+                die();
+            }
+            
             $menu = $this->generateMenu($id, $files);
             $save_menu = $this->exportsDir($id) . "/menu.html";
             file_put_contents($save_menu, $menu);
@@ -670,7 +687,8 @@ class gittobook {
             if (!$res) {
                 $this->errors[] = lang::translate('Could not move all HTML assets');
             } else {
-                $this->updateRow($id, array('published' => 1));
+                $db_values['published'] = 1;
+                $this->dbUpdateRepo($id, $db_values);
             }
             
             
@@ -1361,10 +1379,15 @@ EOF;
         $id = direct::fragment(1);
         
         // check if repo is published
-        $repo = $this->get(array('published =' => 1, 'id =' => $id));
-        if (empty($repo)) {
+        $repo = $this->get(array('id =' => $id));
+        $user_owns = user::ownID('gitrepo', $id, session::getUserId());
+        if ($repo['published'] == 0 && !$user_owns) {
             moduleloader::setStatus(404);
             return false;
+        }
+        
+        if (empty($repo)) {
+            
         }
         
         // increment
@@ -1520,20 +1543,20 @@ EOF;
      */
     public function viewHeaderCommon ($repo, $options = array ()) {
         
-        
+        // encode
         $repo = html::specialEncode($repo);
         
+        // exports url
         $url = $this->exportsUrl($repo);
-        $str = '';
-
         
+        // string
+        $str = '';
         $str.= html::createLink($url, html::getHeadline($repo['title']));
         if (isset($options['admin'])) {
             return $str;
         }
         
         $str.= $repo['subtitle'];
-        
         $str.= '<table class="gb_table">'; 
         $str.= '<tr>';
         $str.= '<td>';
@@ -1564,7 +1587,6 @@ EOF;
         $str.='</td>';
         $str.='</tr>';
         
-
         if (user::ownID('gitrepo', $repo['id'], session::getUserId())) {
             $options['options'] = 1;
         }
@@ -1580,20 +1602,19 @@ EOF;
             $str.='</tr>';
         }
         
-        if (isset($options['share'])) {
-            $s = new gittobook_share();
-            $str.= '<tr>';
-            $str.= '<td>';
-            $str.= lang::translate('Share this using: ');
-            $str.= '</td>';
-            $str.= '<td>';
-            $str.= $s->getShareString($repo['title'], $repo['subtitle']);
-            $str.= '</td>';
-            $str.= '</tr>';
-        }
-        
-        if (isset($options['exports'])) {
 
+        $s = new gittobook_share();
+        $str.= '<tr>';
+        $str.= '<td>';
+        $str.= lang::translate('Share this using: ');
+        $str.= '</td>';
+        $str.= '<td>';
+        $str.= $s->getShareString($repo['title'], $repo['subtitle']);
+        $str.= '</td>';
+        $str.= '</tr>';
+
+        $user_owns = user::ownID('gitrepo', $repo['id'], session::getUserId());
+        if ($user_owns OR !$repo['private']) {
             $ary = $this->exportsArray($repo['id']);
             unset($ary['html']);
             $str.='<tr>';
@@ -1602,6 +1623,15 @@ EOF;
             $str.='</td>';
             $str.='<td>';
             $str.= implode(MENU_SUB_SEPARATOR, $ary);
+            $str.='</td>';
+            $str.='</tr>';
+        } else {
+            $str.='<tr>';
+            $str.='<td>';
+            $str.= lang::translate('Exports: ');
+            $str.='</td>';
+            $str.='<td>';
+            $str.= lang::translate('Private');
             $str.='</td>';
             $str.='</tr>';
         }
