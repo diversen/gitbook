@@ -634,25 +634,27 @@ class gittobook {
             
                 // get export file name and create dirs
                 $info = pathinfo($file);
-                
+                //$file = $info['']
                 // mv md file
-                copy($file, $this->exportsDir($id). "/$info[basename]");
+                copy($file, $this->exportsDir($id). "/" . $info['basename']);
                 
                 // generate html
-                $export_file = $this->exportsDir($id) . "/$info[filename].html";
+                $export_file = $this->exportsDir($id) . "/" . $info['filename'] . ".html";
                 
                 $command = "cd $repo_path && ";
 
                 // add base flags
+                
                 $base_flags = $this->pandocArgs($id, 'html-chunked', $options);
-                $command.= "pandoc $base_flags ";
-                $command.= "-o $export_file ";
-                $command.=$file . " 2>&1";
+                $command.= "pandoc " . escapeshellcmd($base_flags) . " ";
+                $command.= "-o '" . $export_file . "' ";
+                $command.= "'$file'" . " 2>&1";
                 $output = array();
                 exec($command, $output, $ret);
                 if ($ret) {
                     echo lang::translate("Failed to create export of type: ") . "html (chunks)" . "<br />";
                     echo html::getErrors($output);
+                    echo $command;
                     log::error($command);
                     log::error($output);
                     break;
@@ -1252,7 +1254,7 @@ EOF;
         $base_flags = escapeshellcmd($base_flags);
 
         $command.= "pandoc $base_flags ";
-        $command.= "-o $export_file ";
+        $command.= "-o '$export_file' ";
         
         $files_str = $this->mdAllFile($id);
         if ($files_str === false) {
@@ -1260,7 +1262,7 @@ EOF;
             die();
         }
 
-        $command.=$files_str . " 2>&1";
+        $command.= escapeshellcmd($files_str) . " 2>&1";
         $output = array();
         exec($command, $output, $ret);
         if ($ret) {
@@ -1407,7 +1409,7 @@ EOF;
      * @return string $str
      */
     public function htmlTitle ($file) {        
-        $line = fgets(fopen($file, 'r'));
+        $line = @fgets(fopen($file, 'r'));
         return trim(str_replace(['#','-'], [''], $line));
     }
     
