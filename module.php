@@ -1205,9 +1205,9 @@ EOF;
 
         // command
         $command = "cd $export_dir && kindlegen " .
-                $repo['name'] . ".epub" .
+                "'$repo[name].epub'" .
                 " -o " .
-                $repo['name'] . ".mobi";
+                "'$repo[name].mobi'";
 
         exec($command, $output, $ret);
         if ($ret) {
@@ -1388,7 +1388,7 @@ EOF;
             $title = $this->htmlTitle($file);
             if (!empty($title)) {
                 $yaml['title'].= MENU_SUB_SEPARATOR . $title;
-                $yaml['Subtitle'] = $title . MENU_SUB_SEPARATOR . $yaml['Subtitle'];
+                $yaml['Subtitle'] = $yaml['title'] . ". " . $yaml['Subtitle'];
             }
             
             $str.= $this->htmlChunked($id);

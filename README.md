@@ -1,14 +1,14 @@
-#
+# Description
 
-A CosCMS module to create ebooks using Pandoc and git. Generate a git repo, add some markdown files. Enter the git repo url on your install, and the different formats will be build. 
+A CosCMS module to create ebooks using Pandoc and git. 
+Generate a git repo, add some markdown files. 
+Enter the git repo url on your install, and the different formats will be build. 
 
-#
-
-Online version: 
+# Online version
 
 <http://gittobook.org/>
 
-#
+# Docs
 
 Documentation for building: 
 
