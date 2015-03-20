@@ -1421,7 +1421,12 @@ EOF;
                 $yaml['title'].= MENU_SUB_SEPARATOR . $title;
                 $yaml['Subtitle'] = $yaml['title'] . ". " . $yaml['Subtitle'];
             }
-            $str.= $this->htmlChunked($id);
+            $chunked = $this->htmlChunked($id);
+            if ($chunked === false) {
+                moduleloader::setStatus(404);
+                return;
+            }
+            $str.=$chunked;
         } else {
             $str.= $this->htmlSingle ($id);
         }
@@ -1527,7 +1532,7 @@ EOF;
             if (file_exists($html_file)) {
                 $str.= file_get_contents($html_file);
             } else {
-                http::permMovedHeader($main_url);
+                return false;
             }
         }
         return $str;
