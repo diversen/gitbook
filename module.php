@@ -634,6 +634,11 @@ class gittobook {
             
                 // get export file name and create dirs
                 $info = pathinfo($file);
+                
+                // mv md file
+                copy($file, $this->exportsDir($id). "/$info[basename]");
+                
+                // generate html
                 $export_file = $this->exportsDir($id) . "/$info[filename].html";
                 
                 $command = "cd $repo_path && ";
@@ -654,7 +659,6 @@ class gittobook {
                 } 
             }
 
-            
             $menu = $this->generateMenu($id, $files);
             $save_menu = $this->exportsDir($id) . "/menu.html";
             file_put_contents($save_menu, $menu);
@@ -1376,14 +1380,15 @@ EOF;
         $options = array ('share' => 1, 'exports' => 1 );
         $str.= $this->viewHeaderCommon($repo, $options);
                 
-        
-        
-
-                
-        
-        
         // chunked precede single html document
         if (isset($yaml['format-arguments']['html-chunked'])) {
+            $file = $this->mdFilePathFull($id);           
+            $title = $this->htmlTitle($file);
+            if (!empty($title)) {
+                $yaml['title'].= MENU_SUB_SEPARATOR . $title;
+                $yaml['Subtitle'] = $title . MENU_SUB_SEPARATOR . $yaml['Subtitle'];
+            }
+            
             $str.= $this->htmlChunked($id);
         } else {
             $str.= $this->htmlSingle ($id);
@@ -1393,6 +1398,17 @@ EOF;
                 $yaml['title'], $yaml['Subtitle'], $yaml['keywords'], $repo['image'], 'book');
         
         echo $str;
+    }
+    
+    /**
+     * get a better title from html file
+     * reading first line header
+     * @param string $file
+     * @return string $str
+     */
+    public function htmlTitle ($file) {        
+        $line = fgets(fopen($file, 'r'));
+        return trim(str_replace(['#','-'], [''], $line));
     }
     
     /**
@@ -1406,6 +1422,20 @@ EOF;
         $file = rawurldecode(direct::fragment(2));
         return _COS_HTDOCS . "/books/$id/$file.html";
     }
+    
+    /**
+     * get full file path of a html file based on id
+     * and uri part (2)
+     * @param int $id
+     * @return string $path
+     */
+    public function mdFilePathFull ($id) {
+        // get file name
+        $file = rawurldecode(direct::fragment(2));
+        return _COS_HTDOCS . "/books/$id/$file.md";
+    }
+    
+    
 
     /**
      * get html - not chunked
@@ -1430,6 +1460,11 @@ EOF;
         return $str;
     }
 
+    /**
+     * get chunked html
+     * @param int $id
+     * @return string $str
+     */
     public function htmlChunked($id) {
         $repo = $this->get($id);
         $main_url = $this->exportsUrl($repo);
