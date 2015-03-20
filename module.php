@@ -41,12 +41,11 @@ class gittobook {
                 moduleloader::setStatus(404);
                 return false;
             }
-            die;
+            
         } else {
-            //if ($repo['published'] == 0 && !$user_owns) {
-                moduleloader::setStatus(404);
-                return false;
-            //}
+            moduleloader::setStatus(404);
+            return false;
+
         
         }
     }
@@ -861,7 +860,10 @@ class gittobook {
      * @return array $ary formats
      */
     public function exportFormatsReal ($options) {
-
+        if (empty($options)) {
+            $options = array ();
+        }
+        
         $ini = $this->exportFormatsIni();
         $ary = array ();
         foreach($options as $key => $val) {
@@ -945,11 +947,12 @@ rights: Creative Commons Non-Commercial Share Alike 3.0
 language: en-US
 cover-image: {$cover}
 date: '{$date}'
+private: 0
 # default formats
 format-arguments:
-    pdf: -s -S --toc
+    #pdf: -s -S --toc
     html: -s -S --template={$template} --chapters --number-sections --toc
-    html-chunked: -s -S --template={$chunked} --chapters --number-sections --toc
+    #html-chunked: -s -S --template={$chunked} --chapters --number-sections --toc
     epub: -s -S  --epub-chapter-level=3 --number-sections --toc
     mobi:
 ignore-files:
@@ -1380,6 +1383,11 @@ EOF;
         
         // check if repo is published
         $repo = $this->get(array('id =' => $id));
+        if (empty($repo)) {
+            moduleloader::setStatus(404);
+            return false;
+        }
+        
         $user_owns = user::ownID('gitrepo', $id, session::getUserId());
         if ($repo['published'] == 0 && !$user_owns) {
             moduleloader::setStatus(404);
