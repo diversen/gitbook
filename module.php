@@ -634,7 +634,7 @@ class gittobook {
             
                 // get export file name and create dirs
                 $info = pathinfo($file);
-                $export_file = $this->exportsDirFull($id) . "/$info[filename].html";
+                $export_file = $this->exportsDir($id) . "/$info[filename].html";
                 
                 $command = "cd $repo_path && ";
 
@@ -656,7 +656,7 @@ class gittobook {
 
             
             $menu = $this->generateMenu($id, $files);
-            $save_menu = $this->exportsDirFull($id) . "/menu.html";
+            $save_menu = $this->exportsDir($id) . "/menu.html";
             file_put_contents($save_menu, $menu);
 
             // html not self-contained
@@ -973,34 +973,12 @@ EOF;
     /**
      * if any of the values is missing in meta.yaml
      * we insert default values
-     * @param type $values
-     * @return type
+     * @param array $values
+     * @return array $values
      */
     public function yamlFix ($values) {
         $default = $this->yamlDefaultAry();
         return array_merge($default, $values);
-        // format-options
-        foreach ($default['format-arguments'] as $key => $val) {
-            if (isset($values['format-arguments'][$key])) {
-                $default['format-arguments'][$key] = $values['format-arguments'][$key];
-            } else {
-                $default['format-arguments'][$key] = $val;
-            }
-        }
-        
-        // other values
-        foreach ($default as $key => $val) {
-            if ($key == 'format-arguments') { 
-                continue;
-            }
-            
-            if (isset($values[$key])) {
-                $default[$key] = $values[$key];
-            }
-        }
-
-        print_r($default);
-        return $default;
     }
 
     /**
@@ -1023,8 +1001,7 @@ EOF;
      * @return string|boolean
      */
     public function filesAsStr($id) {
-
-               
+       
         $files = $this->getFilesAry($id,  "/*.md");
         if (empty($files)) {
             return false;
@@ -1185,6 +1162,11 @@ EOF;
         
     }
     
+    /**
+     * set pandoc args errors
+     * @param array $errors
+     * @param string $type
+     */
     public function pandocArgErrors ($errors, $type) {
         
         foreach($errors as $error) {
@@ -1197,17 +1179,19 @@ EOF;
         }
     }
     
-
     /**
-     * run kindlegen
-     * @param int $id repo id
+     * runs kindlegen on a epub file
+     * @param int $id
+     * @param string $type
+     * @param array $options
+     * @return int $res
      */
     public function kindlegenCommand($id, $type, $options) {
+        
         exec("kindlegen", $output, $ret);
         if ($ret) {
             log::error('Kindlegen was not found on system');
-            return $ret;
-    
+            return $ret;    
         }
 
         $repo = $this->get($id);
@@ -1232,14 +1216,9 @@ EOF;
         return $ret;
     }
 
-    public function exportsDirFull ($id) {
-        $export_dir = $this->exportsDir($id);
-        $export_dir_full = $export_dir;
-        return $export_dir_full;
-    }
     /**
      * runs a pandoc command based on repo id 'type' ,e.g. epub, and options
-     * @param repo $id
+     * @param int $id 
      * @param string $type pdf, mobi, epub, etc. 
      * @param array $options
      */
@@ -1250,7 +1229,7 @@ EOF;
         $repo_name = $this->repoName($repo['repo']);
 
         // get export file name and create dirs
-        $export_file = $this->exportsDirFull($id) . "/$repo_name.$type";
+        $export_file = $this->exportsDir($id) . "/$repo_name.$type";
 
         // get repo path
         $repo_path = $this->repoPath($id);
@@ -1293,7 +1272,7 @@ EOF;
 
     /**
      * simple check to see if a path is a git repo
-     * @param type $repo_path
+     * @param array $repo
      * @return boolean
      */
     public function isRepo($row) {
@@ -1318,13 +1297,6 @@ EOF;
         } else {
             $res = $this->checkout($row);
         }
-        
-        // if exec ok - we add a title from meta.yaml to database 
-        // if one if found - else we set title to unititled
-        if (!$res) {
-            //$this->repoPath($repo)
-        }
-        
         return $res;
     }
 
@@ -1382,22 +1354,12 @@ EOF;
         // get repo id
         $id = direct::fragment(1);
         
-        // get file name
-        $file = rawurldecode(direct::fragment(2));
-        $html_file = _COS_HTDOCS . "/books/$id/$file.html";
-        
         // check if repo is published
         $repo = $this->get(array('published =' => 1, 'id =' => $id));
         if (empty($repo)) {
             moduleloader::setStatus(404);
             return false;
         }
-         
-        // check correct url
-        $main_url = $this->exportsUrl($repo);
-        //echo strings::utf8SlugString($repo['name']);
-        
-        
         
         // increment
         $c = new count_module();
@@ -1414,45 +1376,97 @@ EOF;
         $options = array ('share' => 1, 'exports' => 1 );
         $str.= $this->viewHeaderCommon($repo, $options);
                 
-        template_meta::setMetaAll(
-                $yaml['title'], $yaml['Subtitle'], $yaml['keywords'], $repo['image'], 'book');
+        
+        
+
+                
         
         
         // chunked precede single html document
         if (isset($yaml['format-arguments']['html-chunked'])) {
-        
-            $menu_html = _COS_HTDOCS . "/books/$id/menu.html";
-            if (file_exists($menu_html)) {
-                $str.= file_get_contents($menu_html);    
-            }
-
-            if ($repo['name'] != $file) {
-                if (file_exists($html_file)) {
-                    $str.= file_get_contents($html_file);
-                } else {
-                    http::permMovedHeader($main_url);
-                }
-            }
-            echo $str;
-            return;
+            $str.= $this->htmlChunked($id);
+        } else {
+            $str.= $this->htmlSingle ($id);
         }
+        
+        template_meta::setMetaAll(
+                $yaml['title'], $yaml['Subtitle'], $yaml['keywords'], $repo['image'], 'book');
+        
+        echo $str;
+    }
+    
+    /**
+     * get full file path of a html file based on id
+     * and uri part (2)
+     * @param int $id
+     * @return string $path
+     */
+    public function htmlFilePathFull ($id) {
+        // get file name
+        $file = rawurldecode(direct::fragment(2));
+        return _COS_HTDOCS . "/books/$id/$file.html";
+    }
 
-        // html single
+    /**
+     * get html - not chunked
+     * @param int $id
+     * @param string $html_file
+     * @return string $str
+     */
+    public function htmlSingle ($id) {
+
+        $html_file = $this->htmlFilePathFull($id);
+        $main_url = $this->repoMainUrl($id);
+        
         http::permMovedHeader($main_url);
-                template_meta::setCanonical($main_url);
+        template_meta::setCanonical($main_url);
+        
+        $str = '';
         if (file_exists($html_file)) {
             if (file_exists($html_file)) {
                 $str.= file_get_contents($html_file);
-            } else {
-                
-            }
-            echo $str;
-            
+            } 
         }
+        return $str;
+    }
+
+    public function htmlChunked($id) {
+        $repo = $this->get($id);
+        $main_url = $this->exportsUrl($repo);
+
+        // get file name
+        $file = rawurldecode(direct::fragment(2));
+        $html_file = $this->htmlFilePathFull($id);
         
+        //$main_url = $this->repoMainUrl($id);
+        $menu_html = _COS_HTDOCS . "/books/$id/menu.html";
         
+        $str = '';
+        if (file_exists($menu_html)) {
+            $str.= file_get_contents($menu_html);
+        }
+
+        // if current file is not equal repo name 
+        if ($repo['name'] != $file) {
+            if (file_exists($html_file)) {
+                $str.= file_get_contents($html_file);
+            } else {
+                http::permMovedHeader($main_url);
+            }
+        }
+        return $str;
     }
     
+    /**
+     * get repo main url /books/id/some-book
+     * @param int $id repo id
+     * @return string $url repo main url
+     */   
+    public function repoMainUrl ($id) {
+        $repo = $this->get($id);
+        return $this->exportsUrl($repo);
+    }
+
     /**
      * get repo headers common
      * @param array $repo
