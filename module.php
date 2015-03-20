@@ -1381,7 +1381,7 @@ EOF;
         $str = '';
         $options = array ('share' => 1, 'exports' => 1 );
         $str.= $this->viewHeaderCommon($repo, $options);
-                
+            
         // chunked precede single html document
         if (isset($yaml['format-arguments']['html-chunked'])) {
             $file = $this->mdFilePathFull($id);           
@@ -1390,16 +1390,24 @@ EOF;
                 $yaml['title'].= MENU_SUB_SEPARATOR . $title;
                 $yaml['Subtitle'] = $yaml['title'] . ". " . $yaml['Subtitle'];
             }
-            
             $str.= $this->htmlChunked($id);
         } else {
             $str.= $this->htmlSingle ($id);
         }
         
+        // set meta
+        $author = $this->author($yaml['author']);
         template_meta::setMetaAll(
-                $yaml['title'], $yaml['Subtitle'], $yaml['keywords'], $repo['image'], 'book');
+                $yaml['title'], $yaml['Subtitle'], $yaml['keywords'], $repo['image'], 'book', $author);
         
         echo $str;
+    }
+    
+    public function author ($author) {
+        if (is_array($author)) {
+            return implode(', ', $author);
+        }
+        return $author;
     }
     
     /**
