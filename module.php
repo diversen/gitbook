@@ -738,9 +738,9 @@ class gittobook {
         
         $info = pathinfo($file);
         if (empty($title)) {
-            $title = $info[filename];
+            $title = $info['filename'];
         }
-        $url = "/books/$id/$info[filename]";
+        $url = "/books/$id/" . rawurlencode($info['filename']);
         return html::createLink($url, $title);
     }
     
