@@ -1108,7 +1108,7 @@ EOF;
             $str.= " --latex-engine=xelatex ";
         }
         
-        $str.= " --from=markdown-raw_html ";
+        $str.= " --from=markdown-raw_html+line_blocks";
         return $str;
     }
     
