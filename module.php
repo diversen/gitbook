@@ -36,7 +36,7 @@ class gittobook {
             } 
 
             try {
-                $s->send($full);
+                $s->send($full, false);
             } catch (\Exception $e) {
                 moduleloader::setStatus(404);
                 return false;
@@ -59,8 +59,12 @@ class gittobook {
     
     
     public function testAction () {
-        $file = '/home/dennis/www/gitbook/htdocs/books/54/06-profeternes-paradis.html';
-        echo file_get_contents($file);
+        $file = '/home/dennis/www/gitbook/htdocs/books/54/06-profeternes-paradis.md';
+        //$y = new Yaml();
+        $yaml = new Parser();
+        $values = $yaml->parse(file_get_contents($file));
+        print_r($values); die;
+        //echo file_get_contents($file);
     }
     
     /**
@@ -729,6 +733,8 @@ class gittobook {
         die();
     }
     
+
+    
     /**
      * generates a html menu from md files
      * @param type $files
@@ -1172,7 +1178,8 @@ EOF;
                 'sansfont',
                 'monofont',
                 'boldfont',
-                'version'),
+                'version',
+                'toc-depth'),
         );
 
         $o = new optValid();
