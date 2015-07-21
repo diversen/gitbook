@@ -11,7 +11,8 @@ use diversen\cli\optValid;
 use diversen\pagination;
 use diversen\uri\direct;
 use diversen\sendfile;
-
+use diversen\db\q as db_q;
+use diversen\template\meta as template_meta;
 
 class gittobook {
     
