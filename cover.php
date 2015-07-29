@@ -7,7 +7,7 @@ require "$vendor/autoload.php";
 use GDText\Box;
 use GDText\Color;
 use Gregwar\Image\Image;
-use diversen\conf;
+
 
 class gittobook_cover extends gittobook {
 
