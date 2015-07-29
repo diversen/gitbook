@@ -1,16 +1,13 @@
 <?php
 
 
-class conf {
-    
-}
 $vendor = dirname(__FILE__) . "/vendor";
 require "$vendor/autoload.php";
 
 use GDText\Box;
 use GDText\Color;
 use Gregwar\Image\Image;
-use diversen\conf as config;
+use diversen\conf;
 
 class gittobook_cover extends gittobook {
 
@@ -26,7 +23,7 @@ class gittobook_cover extends gittobook {
 
         $box = new Box($im);
 
-        $font = config::getModulePath('gittobook') . "/fonts/OpenSans-Bold.ttf";
+        $font = conf::getModulePath('gittobook') . "/fonts/OpenSans-Bold.ttf";
 
         $box->setFontFace($font); // http://www.dafont.com/franchise.font
         $box->setFontColor(new Color(0, 0, 0));
@@ -40,7 +37,7 @@ class gittobook_cover extends gittobook {
                 $title
         );
 
-        $font = config::getModulePath('gittobook') . "/fonts/OpenSans-Regular.ttf";
+        $font = conf::getModulePath('gittobook') . "/fonts/OpenSans-Regular.ttf";
 
         $box->setFontFace($font); // http://www.dafont.com/franchise.font
         $box->setFontColor(new Color(33, 33, 33));
@@ -58,7 +55,7 @@ class gittobook_cover extends gittobook {
         }
 
         $authors = mb_substr($authors, 0, 255);
-        $font = config::getModulePath('gittobook') . "/fonts/OpenSans-Bold.ttf";
+        $font = conf::getModulePath('gittobook') . "/fonts/OpenSans-Bold.ttf";
 
         $box->setFontFace($font); // http://www.dafont.com/franchise.font
         $box->setFontColor(new Color(33, 33, 33));
