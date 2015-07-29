@@ -1,11 +1,16 @@
 <?php
 
+
+class conf {
+    
+}
 $vendor = dirname(__FILE__) . "/vendor";
 require "$vendor/autoload.php";
 
 use GDText\Box;
 use GDText\Color;
 use Gregwar\Image\Image;
+use diversen\conf as config;
 
 class gittobook_cover extends gittobook {
 

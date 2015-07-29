@@ -5,7 +5,7 @@
 class gittobook_share {
 
     public function getShareString($title, $description) {
-        $url = config::getSchemeWithServerName();
+        $url = conf::getSchemeWithServerName();
         $url.= $_SERVER['REQUEST_URI'];
 
         $email_description = $description . "\n\n$url"; 
