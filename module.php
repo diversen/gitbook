@@ -13,6 +13,7 @@ use diversen\uri\direct;
 use diversen\sendfile;
 use diversen\db\q as db_q;
 use diversen\template\meta as template_meta;
+use diversen\conf as config;
 
 class gittobook {
     
