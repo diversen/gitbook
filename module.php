@@ -1,19 +1,29 @@
 <?php
 
-use Symfony\Component\Yaml\Parser;
-use Symfony\Component\Yaml\Dumper;
-use Symfony\Component\Filesystem\Filesystem;
-use diversen\valid;
+use diversen\cli\optValid;
+use diversen\conf;
+use diversen\date;
+use diversen\db\q;
 use diversen\db\rb;
 use diversen\html;
+use diversen\file;
 use diversen\html\helpers;
-use diversen\cli\optValid;
+use diversen\http;
+use diversen\lang;
+use diversen\log;
+use diversen\moduleloader;
 use diversen\pagination;
-use diversen\uri\direct;
 use diversen\sendfile;
-use diversen\db\q as db_q;
-use diversen\template\meta as template_meta;
-use diversen\conf as config;
+use diversen\session;
+use diversen\strings;
+use diversen\template;
+use diversen\template\meta as meta;
+use diversen\uri\direct;
+use diversen\user;
+use diversen\valid;
+use Symfony\Component\Filesystem\Filesystem;
+use Symfony\Component\Yaml\Dumper;
+use Symfony\Component\Yaml\Parser;
 
 class gittobook {
     
@@ -26,7 +36,7 @@ class gittobook {
         if ($user_owns OR !$repo['private']) {
             
             $name = direct::fragment(2);
-            $full = _COS_HTDOCS . "/books/$id/$name";
+            $full = conf::pathHtdocs() . "/books/$id/$name";
 
             $s = new sendfile();
 
@@ -39,7 +49,7 @@ class gittobook {
 
             try {
                 $s->send($full, false);
-            } catch (\Exception $e) {
+            } catch (Exception $e) {
                 moduleloader::setStatus(404);
                 return false;
             }
@@ -84,7 +94,7 @@ class gittobook {
      */
     public function __construct() {
         rb::connect();
-        $css = config::getModulePath('gittobook') . "/assets.css";
+        $css = conf::getModulePath('gittobook') . "/assets.css";
         template::setInlineCss($css);
     }
 
@@ -117,7 +127,7 @@ class gittobook {
         $bean = rb::getBean('gitrepo', 'user_id', session::getUserId());
         if ($bean->id) {
             $user_id = session::getUserId();
-            $rows = db_q::select('gitrepo')->filter('user_id =', $user_id)->fetch();
+            $rows = q::select('gitrepo')->filter('user_id =', $user_id)->fetch();
             echo $this->viewRepos($rows, 
                     array(
                         'admin' => 1,
@@ -135,14 +145,14 @@ class gittobook {
     public function indexAction() {
         
         $per_page = 10;
-        $num_rows = db_q::numRows('gitrepo')->fetch();
+        $num_rows = q::numRows('gitrepo')->fetch();
         
         $pager = new pagination($num_rows, $per_page);
         
         $title = lang::translate('List of books. Page ') . $pager->getPageNum();
-        template_meta::setMetaAll($title);
+        meta::setMetaAll($title);
         
-        $rows = db_q::select('gitrepo')->
+        $rows = q::select('gitrepo')->
                 filter('published =', 1)->
                 order('hits', 'DESC')->
                 limit($pager->from, $per_page)->
@@ -282,7 +292,7 @@ class gittobook {
      * @return int $res
      */
     public function dbDeleteRepo($id) {
-        return $res = db_q::delete('gitrepo')->filter('id =', $id)->exec();
+        return $res = q::delete('gitrepo')->filter('id =', $id)->exec();
     }
 
     /**
@@ -372,9 +382,9 @@ class gittobook {
      */
     public function get($var) {
         if (!is_array($var)) {
-            return db_q::select('gitrepo')->filter('id =', $var)->fetchSingle();
+            return q::select('gitrepo')->filter('id =', $var)->fetchSingle();
         }
-        return db_q::select('gitrepo')->filterArray($var, 'AND')->fetchSingle();
+        return q::select('gitrepo')->filterArray($var, 'AND')->fetchSingle();
     }
 
     /**
@@ -387,7 +397,7 @@ class gittobook {
 
         $repo = $this->get($id);
         $path = $this->repoName($repo['repo']);
-        $path = _COS_PATH . "/private/gittobook/$id" . "/$path";
+        $path = conf::pathBase() . "/private/gittobook/$id" . "/$path";
         return $path;
     }
     
@@ -801,7 +811,7 @@ class gittobook {
         $c = new gittobook_cover();
         if ($yaml['cover-image'] == 'Not set') {
             $c->create($id);
-            $cover_image = _COS_HTDOCS . "/books/$id/cover.png"; 
+            $cover_image = conf::pathHtdocs() . "/books/$id/cover.png"; 
         } else {
             $cover_image = $this->repoPath($id) . "/" . $yaml['cover-image'];
         }
@@ -812,7 +822,7 @@ class gittobook {
             $error.= lang::translate('Correct path and re-build. We use a default cover');
             echo html::getError($error);
             $c->create($id);
-            $cover_image = _COS_HTDOCS . "/books/$id/cover.png"; 
+            $cover_image = conf::pathHtdocs() . "/books/$id/cover.png"; 
         }
         
         $mime = file::getMime($cover_image);
@@ -820,12 +830,12 @@ class gittobook {
             $error = lang::translate('Your cover image does not have the correct type. Allowed types are gif, jpg, jpeg, png') . ". ";
             $error.= lang::translate('Correct image and re-build. We use a default cover');
             $c->create($id);
-            $cover_image = _COS_HTDOCS . "/books/$id/cover.png"; 
+            $cover_image = conf::pathHtdocs() . "/books/$id/cover.png"; 
             echo html::getError($error);
         }
         
         $image_path = $c->scale($id, $cover_image);
-        $yaml['cover-image'] = _COS_HTDOCS  . "$image_path";
+        $yaml['cover-image'] = conf::pathHtdocs()  . "$image_path";
         
         // generate yaml meta in exports
         $yaml_res = $this->yamlExportsMeta($id, $yaml);
@@ -857,7 +867,7 @@ class gittobook {
      * @return array $ary exports from ini
      */
     public function exportFormatsIni() {
-        $exports = config::getModuleIni('gittobook_exports');
+        $exports = conf::getModuleIni('gittobook_exports');
         return explode(",", $exports);
     }
     
@@ -940,8 +950,8 @@ class gittobook {
     public function yamlDefaultStr () {
         $date = date::getDateNow();
         $cover = 'Not set'; /* config::getModulePath('gittobook') . "/images/cover.jpg"; */
-        $template = config::getModulePath('gittobook') . "/templates/template.html";
-        $chunked = config::getModulePath('gittobook') . "/templates/chunked.html";
+        $template = conf::getModulePath('gittobook') . "/templates/template.html";
+        $chunked = conf::getModulePath('gittobook') . "/templates/chunked.html";
         $str = <<<EOF
 ---
 title: Untitled
@@ -1025,7 +1035,7 @@ EOF;
         if (!$id) {
             die('exportsDir() function should always get and ID ');
         }
-        $exports_dir = _COS_HTDOCS . "/books/$id";
+        $exports_dir = conf::pathHtdocs() . "/books/$id";
         file::mkdirDirect($exports_dir);
         return $exports_dir;
     }
@@ -1099,12 +1109,12 @@ EOF;
     public function pandocAddArgs ($id, $type) {
         $str ='';
         if ($type == 'html') {
-            $template = config::getModulePath('gittobook') . "/templates/template.html";
+            $template = conf::getModulePath('gittobook') . "/templates/template.html";
             $str.= " --template=$template -t html5 ";
         }
         
         if ($type == 'html-chunked') {
-            $template = config::getModulePath('gittobook') . "/templates/chunked.html";
+            $template = conf::getModulePath('gittobook') . "/templates/chunked.html";
             $str.= " --template=$template -t html5 ";
         }
         
@@ -1328,7 +1338,7 @@ EOF;
      */
     public function execCheckout($id) {
 
-        $row = db_q::select('gitrepo')->filter('id =', $id)->fetchSingle();
+        $row = q::select('gitrepo')->filter('id =', $id)->fetchSingle();
         if (!$this->isRepo($row)) {
             $res = $this->execClone($row);
         } else {
@@ -1375,7 +1385,7 @@ EOF;
      */
     public function repoCheckoutPath($repo) {
 
-        $path = _COS_PATH . "/private/gittobook/" . $repo['id'];
+        $path = conf::pathBase() . "/private/gittobook/" . $repo['id'];
         if (!file_exists($path)) {
             mkdir($path, 0777, true);
         }
@@ -1416,7 +1426,7 @@ EOF;
         $yaml = $this->yamlAsAry($id);
         
         if (isset($yaml['language'])) {
-            config::setMainIni('lang', $yaml['language']);
+            conf::setMainIni('lang', $yaml['language']);
         }
         
         $str = '';
@@ -1443,7 +1453,7 @@ EOF;
         
         // set meta
         $author = $this->author($yaml['author']);
-        template_meta::setMetaAll(
+        meta::setMetaAll(
                 $yaml['title'], $yaml['Subtitle'], $yaml['keywords'], $repo['image'], 'book', $author);
         
         echo $str;
@@ -1476,7 +1486,7 @@ EOF;
     public function htmlFilePathFull ($id) {
         // get file name
         $file = rawurldecode(direct::fragment(2));
-        return _COS_HTDOCS . "/books/$id/$file.html";
+        return conf::pathHtdocs() . "/books/$id/$file.html";
     }
     
     /**
@@ -1488,7 +1498,7 @@ EOF;
     public function mdFilePathFull ($id) {
         // get file name
         $file = rawurldecode(direct::fragment(2));
-        return _COS_HTDOCS . "/books/$id/$file.md";
+        return conf::pathHtdocs() . "/books/$id/$file.md";
     }
     
     
@@ -1505,7 +1515,7 @@ EOF;
         $main_url = $this->repoMainUrl($id);
         
         http::permMovedHeader($main_url);
-        template_meta::setCanonical($main_url);
+        meta::setCanonical($main_url);
         
         $str = '';
         if (file_exists($html_file)) {
@@ -1530,7 +1540,7 @@ EOF;
         $html_file = $this->htmlFilePathFull($id);
         
         //$main_url = $this->repoMainUrl($id);
-        $menu_html = _COS_HTDOCS . "/books/$id/menu.html";
+        $menu_html = conf::pathHtdocs() . "/books/$id/menu.html";
         
         $str = '';
         if (file_exists($menu_html)) {

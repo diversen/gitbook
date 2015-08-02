@@ -1,5 +1,7 @@
 <?php
 
+use diversen\conf;
+
 
 
 class gittobook_share {

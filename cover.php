@@ -4,6 +4,8 @@
 $vendor = dirname(__FILE__) . "/vendor";
 require "$vendor/autoload.php";
 
+use diversen\conf;
+use diversen\file;
 use GDText\Box;
 use GDText\Color;
 use Gregwar\Image\Image;
@@ -14,7 +16,7 @@ class gittobook_cover extends gittobook {
     public function create($id) {
 
         $yaml = $this->yamlAsAry($id);
-        $save = _COS_HTDOCS . "/books/$id/cover.png";
+        $save = conf::pathHtdocs() . "/books/$id/cover.png";
         $title = mb_substr($yaml['title'], 0, 60);
         
         $im = imagecreatetruecolor(1800, 2400);
