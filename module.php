@@ -69,7 +69,9 @@ class gittobook {
      */
     public $mime = ['image/png', 'image/gif', 'image/jpeg', 'image/jpg'];
     
-    
+    /**
+     * some strange test action ...
+     */
     public function testAction () {
         $file = '/home/dennis/www/gitbook/htdocs/books/54/06-profeternes-paradis.md';
         //$y = new Yaml();
@@ -99,12 +101,12 @@ class gittobook {
     }
 
     /**
-     * 
-     * @param type $path
-     * @param type $id
+     * check if user is user
+     * @param string $path
+     * @param int $id
      * @return int
      */
-    public function checkAccess($path, $id = null) {
+    public function checkAccess($path) {
         if ($path == 'repos') {
             if (!session::checkAccessClean('user')) {
                 moduleloader::setStatus(403);
@@ -146,7 +148,6 @@ class gittobook {
         
         $per_page = 10;
         $num_rows = q::numRows('gitrepo')->fetch();
-        
         $pager = new pagination($num_rows, $per_page);
         
         $title = lang::translate('List of books. Page ') . $pager->getPageNum();
@@ -175,6 +176,7 @@ class gittobook {
             $str.= $this->viewRepo($row, $options);
         }
         return $str;
+        
     }
     
     /**
@@ -188,6 +190,7 @@ class gittobook {
         $str.=$this->viewHeaderCommon($row, $options);
         $str.= "<hr />";
         return $str;
+        
     }
 
     /**
