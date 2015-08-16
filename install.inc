@@ -16,9 +16,7 @@ $_INSTALL['MAIN_MENU_ITEM'] = array (
 );
 
 $_INSTALL['ROUTES'][] = array ('#/books/[0-9]#'=>
-    array ('method' => 'gittobook::booksAction',
-           'module' => 'gittobook',
-           'controller' => '/gittobook/books'),
+    array ('method' => 'gittobook::booksAction'),
 
 );
 

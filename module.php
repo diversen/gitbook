@@ -1,5 +1,7 @@
 <?php
 
+namespace modules\gittobook;
+
 use diversen\cli\optValid;
 use diversen\conf;
 use diversen\date;
@@ -17,7 +19,7 @@ use diversen\sendfile;
 use diversen\session;
 use diversen\strings;
 use diversen\template;
-use diversen\template\meta as meta;
+use diversen\template\meta;
 use diversen\uri\direct;
 use diversen\user;
 use diversen\valid;
@@ -25,7 +27,11 @@ use Symfony\Component\Filesystem\Filesystem;
 use Symfony\Component\Yaml\Dumper;
 use Symfony\Component\Yaml\Parser;
 
-class gittobook {
+use modules\gittobook\share as share;
+use modules\count\module as counter;
+use modules\gittobook\cover as cover;
+
+class module {
     
     public function downloadAction () {
         
@@ -86,7 +92,7 @@ class gittobook {
      */
     public function coverAction () {
         $id = direct::fragment(2);
-        $c = new gittobook_cover();
+        $c = new cover();
         $c->create($id);
         echo html::createLink("/books/$id/cover.png", "cover");
     }
@@ -811,7 +817,7 @@ class gittobook {
         
         // generate cover
         $yaml = $this->yamlAsAry($id);
-        $c = new gittobook_cover();
+        $c = new cover();
         if ($yaml['cover-image'] == 'Not set') {
             $c->create($id);
             $cover_image = conf::pathHtdocs() . "/books/$id/cover.png"; 
@@ -859,7 +865,7 @@ class gittobook {
         $bean->subtitle = $yaml['Subtitle'];
         $bean->title = $yaml['title'];
         $bean->image = $image_path; 
-        R::store($bean);
+        \R::store($bean);
     }
     
     
@@ -1422,7 +1428,7 @@ EOF;
         }
         
         // increment
-        $c = new count_module();
+        $c = new counter();
         $c->increment('gitrepo', 'hits', $id);
         
         // set meta info
@@ -1639,7 +1645,7 @@ EOF;
         }
         
 
-        $s = new gittobook_share();
+        $s = new share();
         $str.= '<tr>';
         $str.= '<td>';
         $str.= lang::translate('Share this using: ');
@@ -1676,5 +1682,3 @@ EOF;
     }
 
 }
-
-class gittobook_module extends gittobook{}

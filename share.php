@@ -1,10 +1,9 @@
 <?php
 
+namespace modules\gittobook;
 use diversen\conf;
 
-
-
-class gittobook_share {
+class share {
 
     public function getShareString($title, $description) {
         $url = conf::getSchemeWithServerName();
