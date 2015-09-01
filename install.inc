@@ -2,8 +2,6 @@
 
 use diversen\lang;
 
-$_INSTALL['VERSION'] = 3.01; 
-
 $title = lang::translate('Books', null, array ('no_translate' => true)); 
 $url = '/gittobook/index';
 
