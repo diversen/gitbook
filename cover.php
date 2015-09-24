@@ -2,8 +2,8 @@
 
 namespace modules\gittobook;
 
-$vendor = dirname(__FILE__) . "/vendor";
-require "$vendor/autoload.php";
+//$vendor = dirname(__FILE__) . "/vendor";
+//require "$vendor/autoload.php";
 
 use diversen\conf;
 use diversen\file;

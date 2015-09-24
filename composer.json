@@ -1,8 +1,0 @@
-{
-
-    "require": {
-        "Gregwar/Image": "2.*",
-        "stil/gd-text": "1.*"
-    }
-}
-
