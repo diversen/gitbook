@@ -6,6 +6,8 @@ use diversen\conf;
 class share {
 
     public function getShareString($title, $description) {
+        
+        
         $url = conf::getSchemeWithServerName();
         $url.= $_SERVER['REQUEST_URI'];
 

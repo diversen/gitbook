@@ -26,6 +26,7 @@ use diversen\valid;
 use Symfony\Component\Filesystem\Filesystem;
 use Symfony\Component\Yaml\Dumper;
 use Symfony\Component\Yaml\Parser;
+use diversen\uri;
 
 use modules\gittobook\share as share;
 use modules\count\module as counter;
@@ -1646,14 +1647,19 @@ EOF;
         
 
         $s = new share();
-        $str.= '<tr>';
-        $str.= '<td>';
-        $str.= lang::translate('Share this using: ');
-        $str.= '</td>';
-        $str.= '<td>';
-        $str.= $s->getShareString($repo['title'], $repo['subtitle']);
-        $str.= '</td>';
-        $str.= '</tr>';
+        $info = uri::getInfo();
+        if ($info['controller'] != 'index') {
+            $str.= '<tr>';
+            $str.= '<td>';
+            $str.= lang::translate('Share this using: ');
+            $str.= '</td>';
+            $str.= '<td>';
+            $str.= $s->getShareString($repo['title'], $repo['subtitle']);
+            $str.= '</td>';
+            $str.= '</tr>';
+        }
+
+
 
         $user_owns = user::ownID('gitrepo', $repo['id'], session::getUserId());
         if ($user_owns OR !$repo['private']) {
