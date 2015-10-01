@@ -242,7 +242,8 @@ class module {
      * @return type
      */
     public function deleteAction() {
-        if (!user::ownID('gitrepo', $_GET['id'], session::getUserId())) {
+        $user_owns = user::ownID('gitrepo', $_GET['id'], session::getUserId());
+        if (!$user_owns OR session::isAdmin()) {
             moduleloader::setStatus(403);
             return;
         }
@@ -1631,6 +1632,10 @@ EOF;
         $str.='</tr>';
         
         if (user::ownID('gitrepo', $repo['id'], session::getUserId())) {
+            $options['options'] = 1;
+        }
+        
+        if (session::isAdmin()) {
             $options['options'] = 1;
         }
         
