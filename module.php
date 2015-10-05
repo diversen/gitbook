@@ -195,7 +195,6 @@ class module {
 
         $str = '';
         $str.=$this->viewHeaderCommon($row, $options);
-        $str.= "<hr />";
         return $str;
         
     }
@@ -1596,13 +1595,13 @@ EOF;
         
         // string
         $str = '';
-        $str.= html::createLink($url, html::getHeadline($repo['title']));
+        $str.= html::getHeadline(html::createLink($url, $repo['title'])); //, html::getHeadline($repo['title']));
         if (isset($options['admin'])) {
             return $str;
         }
         
-        $str.= $repo['subtitle'];
-        $str.= '<table class="gb_table">'; 
+        $str.= html::getHeadline($repo['subtitle'], 'h3');
+        $str.= html::tableBegin('gb_table uk-table');
         $str.= '<tr>';
         $str.= '<td>';
         $str.= lang::translate('Repo URL: ');
