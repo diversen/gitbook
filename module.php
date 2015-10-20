@@ -1653,7 +1653,8 @@ EOF;
 
         $s = new share();
         $info = uri::getInfo();
-        if ($info['controller'] != 'index') {
+        
+        if ($info['controller'] != 'index' AND $info['controller'] != '') {
             $str.= '<tr>';
             $str.= '<td>';
             $str.= lang::translate('Share this using: ');
