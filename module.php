@@ -555,7 +555,8 @@ class module {
         <div class ="result">
         </div>
         <script type="text/javascript">
-
+            /*
+            
             $.ajaxSetup({
                 async:true
             });
@@ -602,9 +603,69 @@ class module {
                 $.get("/gittobook/ajax?id=<?= $id ?>&format=pdf", function (data) {
                     $('.loader_message').append(data);
                 });
-            });
-            
+            }); */
         </script>
+        <script type="text/javascript">
+            
+            var $loading = $('.loader_gif').hide();
+            $(document).ajaxStart(function () {
+                $loading.show();
+            }).ajaxStop(function () {
+                $loading.hide();
+            });
+
+            function checkoutFiles () {
+                $.get("/gittobook/ajax?id=<?= $id ?>&format=files", function (data) {
+                    $('.loader_message').append(data);
+                });
+            }
+                        
+            function createHtml () {
+                $.get("/gittobook/ajax?id=<?= $id ?>&format=html", function (data) {
+                    $('.loader_message').append(data);
+                });
+            }
+            
+            function createChunked () {
+                $.get("/gittobook/ajax?id=<?= $id ?>&format=html-chunked", function (data) {
+                    $('.loader_message').append(data);
+                });
+            }
+             
+            function createEpub () {
+                $.get("/gittobook/ajax?id=<?= $id ?>&format=epub", function (data) {
+                    $('.loader_message').append(data);
+                });
+            }
+             
+            function createMobi () {
+                $.get("/gittobook/ajax?id=<?= $id ?>&format=mobi", function (data) {
+                    $('.loader_message').append(data);
+                });
+            }
+
+            function createPdf () {
+                $.get("/gittobook/ajax?id=<?= $id ?>&format=pdf", function (data) {
+                    $('.loader_message').append(data);
+                });
+            }
+            
+            $.when(checkoutFiles()).then(createEpub()).then(createHtml(), createMobi(), createChunked(), createPdf());
+            
+            /*
+            var dfd = $.Deferred();
+            dfd.done(checkoutFiles)
+                    .done(createHtml)
+                    .done(createChunked)
+                    .done(createEpub)
+                    .done(createMobi)
+                    .done(createPdf);
+            
+            dfd.resolve();
+            */
+        </script>
+       
+        
         <?php
     }
 
@@ -830,7 +891,7 @@ class module {
         if (!file_exists($cover_image)) {
             //echo "does not exists";
             $error = lang::translate('Cover file does not exists in repo: ') . $yaml['cover-image'] . ". "; 
-            $error.= lang::translate('Correct path and re-build. We use a default cover');
+            $error.= lang::translate('Correct path and re-build if you want your own cover. We use a auto generated cover');
             echo html::getError($error);
             $c->create($id);
             $cover_image = conf::pathHtdocs() . "/books/$id/cover.png"; 
