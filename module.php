@@ -615,42 +615,45 @@ class module {
             });
 
             function checkoutFiles () {
-                $.get("/gittobook/ajax?id=<?= $id ?>&format=files", function (data) {
+                return $.get("/gittobook/ajax?id=<?= $id ?>&format=files", function (data) {
                     $('.loader_message').append(data);
                 });
             }
                         
             function createHtml () {
-                $.get("/gittobook/ajax?id=<?= $id ?>&format=html", function (data) {
+                return $.get("/gittobook/ajax?id=<?= $id ?>&format=html", function (data) {
                     $('.loader_message').append(data);
                 });
             }
             
             function createChunked () {
-                $.get("/gittobook/ajax?id=<?= $id ?>&format=html-chunked", function (data) {
+                return $.get("/gittobook/ajax?id=<?= $id ?>&format=html-chunked", function (data) {
                     $('.loader_message').append(data);
                 });
             }
              
             function createEpub () {
-                $.get("/gittobook/ajax?id=<?= $id ?>&format=epub", function (data) {
+                return $.get("/gittobook/ajax?id=<?= $id ?>&format=epub", function (data) {
                     $('.loader_message').append(data);
                 });
             }
              
             function createMobi () {
-                $.get("/gittobook/ajax?id=<?= $id ?>&format=mobi", function (data) {
+                return $.get("/gittobook/ajax?id=<?= $id ?>&format=mobi", function (data) {
                     $('.loader_message').append(data);
                 });
             }
 
             function createPdf () {
-                $.get("/gittobook/ajax?id=<?= $id ?>&format=pdf", function (data) {
+                return $.get("/gittobook/ajax?id=<?= $id ?>&format=pdf", function (data) {
                     $('.loader_message').append(data);
                 });
             }
             
-            $.when(checkoutFiles()).then(createEpub()).then(createHtml(), createMobi(), createChunked(), createPdf());
+            // Non-blocking
+            
+            checkoutFiles().pipe(createEpub().pipe(createHtml().pipe(createMobi().pipe(createChunked().pipe(createPdf)))));
+            //$.when(checkoutFiles()).then(createEpub()).then(createHtml(), createMobi(), createChunked(), createPdf());
             
             /*
             var dfd = $.Deferred();
