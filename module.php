@@ -650,11 +650,13 @@ class module {
                 });
             }
             
-            checkoutFiles().done(createEpub().done(createHtml().done(createMobi().done(createChunked().done(createPdf)))));
+            checkoutFiles().then(createEpub).then(createMobi).then(createHtml).then(createChunked).then(createPdf);
+            //checkoutFiles().done(createEpub().done(createHtml().done(createMobi().done(createChunked().done(createPdf)))));
             // Non-blocking
            // checkoutFiles().pipe(createEpub().pipe(createHtml().pipe(createMobi().pipe(createChunked().pipe(createPdf)))));
             //$.when(checkoutFiles()).then(createEpub()).then(createHtml(), createMobi(), createChunked(), createPdf());
             
+            //$.when(checkoutFiles()).then(createEpub()).then(createHtml(), createMobi(), createChunked(), createPdf());
             /*
             var dfd = $.Deferred();
             dfd.done(checkoutFiles)
