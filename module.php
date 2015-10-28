@@ -776,6 +776,7 @@ class module {
         // epub
         if (in_array('epub', $formats) && $format == 'epub') {
             $this->pandocCommand($id, 'epub', $options);
+            sleep(10);
             die();
         }
         
