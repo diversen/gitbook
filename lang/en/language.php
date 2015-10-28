@@ -19,7 +19,7 @@ $LANG['URL does not seem to be a git repo. If you know this is a git repo, pleas
 $LANG['Will now checkout repo'] = 'Will now checkout repo';
 $LANG['yaml error. Yaml file is not used. '] = 'yaml error. Yaml file is not used. ';
 $LANG['Could not move all HTML assets'] = 'Could not move all HTML assets';
-$LANG['Could not checkout repo. Somethings went wrong. Try again later'] = 'Could not checkout repo. Somethings went wrong. Try again later';
+$LANG['Could not checkout repo - You need to remove the repo and try again.'] = 'Could not checkout repo - You need to remove the repo and try again.';
 $LANG['Updated repo '] = 'Updated repo ';
 $LANG['Cover file does not exists in repo: '] = 'Cover file does not exists in repo: ';
 $LANG['Correct path and re-build if you want your own cover. We use a auto generated cover'] = 'Correct path and re-build if you want your own cover. We use a auto generated cover';
