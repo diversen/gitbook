@@ -868,7 +868,8 @@ class module {
         echo "<br />";
         $res = $this->execCheckout($id);
         if ($res) {
-            echo lang::translate('Could not checkout repo. Somethings went wrong. Try again later') . "<br />";
+            $error = lang::translate('Could not checkout repo - You need to remove the repo and try again.') . "<br />";
+            echo html::getError($error);
             die();
         } else {
             echo lang::translate('Updated repo ') . "<br />";
