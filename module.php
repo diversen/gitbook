@@ -55,7 +55,7 @@ class module {
             } 
 
             try {
-                $s->send($full, false);
+                $s->send($full, true);
             } catch (Exception $e) {
                 moduleloader::setStatus(404);
                 return false;
@@ -64,8 +64,6 @@ class module {
         } else {
             moduleloader::setStatus(404);
             return false;
-
-        
         }
     }
 
@@ -792,7 +790,6 @@ class module {
         // epub
         if (in_array('epub', $formats) && $format == 'epub') {
             $this->pandocCommand($id, 'epub', $options);
-            sleep(10);
             die();
         }
         
