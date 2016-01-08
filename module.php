@@ -19,6 +19,7 @@ use diversen\sendfile;
 use diversen\session;
 use diversen\strings;
 use diversen\template;
+use diversen\template\assets;
 use diversen\template\meta;
 use diversen\uri\direct;
 use diversen\user;
@@ -102,7 +103,7 @@ class module {
     public function __construct() {
         rb::connect();
         $css = conf::getModulePath('gittobook') . "/assets.css";
-        template::setInlineCss($css);
+        assets::setInlineCss($css);
     }
 
     /**
