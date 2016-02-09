@@ -1661,12 +1661,12 @@ EOF;
         
         // string
         $str = '';
-        $str.= html::getHeadline(html::createLink($url, $repo['title'])); //, html::getHeadline($repo['title']));
+        $str.= html::getHeadline(html::createLink($url, $repo['title']), 'h3'); //, html::getHeadline($repo['title']));
         if (isset($options['admin'])) {
             return $str;
         }
         
-        $str.= html::getHeadline($repo['subtitle'], 'h3');
+        $str.= html::getHeadline($repo['subtitle'], 'h5');
         $str.= html::tableBegin('gb_table uk-table');
         $str.= '<tr>';
         $str.= '<td>';
