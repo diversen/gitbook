@@ -553,58 +553,10 @@ class module {
         </div>
         <div class ="result">
         </div>
-        <script type="text/javascript">
-            /*
-            
-            $.ajaxSetup({
-                async:true
-            });
-            
-            
-            var $loading = $('.loader_gif').hide();
-            $(document).ajaxStart(function () {
-                $loading.show();
-            }).ajaxStop(function () {
-                $loading.hide();
-            });
 
-            
-            var files = $.get("/gittobook/ajax?id=<?= $id ?>&format=files", function (data) {
-                $('.loader_message').append(data);
-            });
-            
-            files.fail(function() {
-                alert( "error" );
-            });
-            
-            files.done(function () {
-                $.get("/gittobook/ajax?id=<?= $id ?>&format=html", function (data) {
-                    $('.loader_message').append(data);
-                });
-                
-                $.get("/gittobook/ajax?id=<?= $id ?>&format=html-chunked", function (data) {
-                    $('.loader_message').append(data);
-                });
-                
-                var epub = $.get("/gittobook/ajax?id=<?= $id ?>&format=epub", function (data) {
-                    $('.loader_message').append(data);
-                });
-                
-                epub.done(function() {
-                    $.get("/gittobook/ajax?id=<?= $id ?>&format=mobi", function (data) {
-                        $('.loader_message').append(data);
-                    });
-                });
-            });
-            
-            
-            files.done(function () {
-                $.get("/gittobook/ajax?id=<?= $id ?>&format=pdf", function (data) {
-                    $('.loader_message').append(data);
-                });
-            }); */
-        </script>
         <script type="text/javascript">
+            
+
             
             var $loading = $('.loader_gif').hide();
             $(document).ajaxStart(function () {
@@ -671,7 +623,9 @@ class module {
         $sleep = 0;
         $id = filter_var($_GET['id'], FILTER_VALIDATE_INT);
         $format = filter_var($_GET['format']);
-        if (!user::ownID('gitrepo', $id, session::getUserId())) {
+        
+        $is_user = !user::ownID('gitrepo', $id, session::getUserId());
+        if (!$is_user AND !session::isAdmin()) {
             echo lang::translate("You can not perform any action on this page.");
             die();
         }
@@ -719,7 +673,12 @@ class module {
         if (in_array('html-chunked', $formats) && $format == 'html-chunked') {
 
             // $files = glob("*.{jpg,png,gif}", GLOB_BRACE);
-            $files = $this->getMarkdownFilesAry($id, '/*.{md,markdown}', GLOB_BRACE);
+            $files_md = $this->getMarkdownFilesAry($id, '/*.md');
+            $files_markdown = $this->getMarkdownFilesAry($id, '/*.markdown');
+            
+            $files = array_merge($files_md, $files_markdown); 
+            
+            
             $repo_path = $this->repoPath($id);
             
             $ret = 0;
@@ -920,6 +879,7 @@ class module {
         // create a single file with yaml and markdown
         $md_file = $this->mdAllFile($id);
         $str = $this->filesAsStr($id);
+        
         $write_res = file_put_contents($md_file, $str);
         if (!$write_res) {
             echo lang::translate('Could not write to file system:' . $md_file) . "<br />";
@@ -1122,9 +1082,12 @@ EOF;
      */
     public function filesAsStr($id) {
        
-        $files = $this->getMarkdownFilesAry($id, '/*.{md,markdown}', GLOB_BRACE);
+        // $files = $this->getMarkdownFilesAry($id, '/*.{md,markdown}', GLOB_BRACE);
 
-        // $files = $this->getMarkdownFilesAry($id,  "/*.markdown");
+        $md_files = $this->getMarkdownFilesAry($id,  "/*.md");
+        $markdown_files = $this->getMarkdownFilesAry($id,  "/*.markdown");
+        
+        $files = array_merge ($md_files, $markdown_files);
         if (empty($files)) {
             return false;
         }
@@ -1613,6 +1576,7 @@ EOF;
      * @return string $str
      */
     public function htmlChunked($id) {
+        
         $repo = $this->get($id);
         $main_url = $this->exportsUrl($repo);
 
