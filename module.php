@@ -922,7 +922,7 @@ class module {
         $str = $this->filesAsStr($id);
         $write_res = file_put_contents($md_file, $str);
         if (!$write_res) {
-            echo lang::translate('Could not write to file system ') . "<br />";
+            echo lang::translate('Could not write to file system:' . $md_file) . "<br />";
             die();
         }
         
