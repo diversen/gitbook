@@ -1007,7 +1007,7 @@ format-arguments:
     html: -s -S --template={$template} --chapters --number-sections --toc
     #html-chunked: -s -S --template={$chunked} --chapters --number-sections --toc
     epub: -s -S  --epub-chapter-level=3 --number-sections --toc
-    #mobi:
+    mobi: ok
 ignore-files:
 
 ...
