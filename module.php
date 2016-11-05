@@ -56,7 +56,7 @@ class module {
             } 
 
             try {
-                $s->send($full, true);
+                $s->send($full, false);
             } catch (Exception $e) {
                 moduleloader::setStatus(404);
                 return false;
@@ -467,9 +467,9 @@ class module {
      * @param string $pattern
      * @return array $files dirs and files
      */
-    public function globdir($filepath, $pattern = null) {
+    public function globdir($filepath, $pattern = null, $flags = 0) {
         $dirs = glob($filepath . "/*", GLOB_ONLYDIR);
-        $files = glob($filepath . $pattern);
+        $files = glob($filepath . $pattern, $flags);
         $all = array_unique(array_merge($dirs, $files));
         return $all;
     }
@@ -497,10 +497,10 @@ class module {
      * @param string $ext
      * @return array $ary array of files
      */
-    public function getFilesAry($id, $ext) {
+    public function getMarkdownFilesAry($id, $ext, $flags = 0) {
         $path = $this->repoPath($id); 
         $options = $this->yamlAsAry($id);
-        $top = $this->globdir($path, $ext);
+        $top = $this->globdir($path, $ext, $flags);
         $final = array();
 
         foreach ($top as $file) {
@@ -649,24 +649,14 @@ class module {
                 });
             }
             
-            checkoutFiles().then(createEpub).then(createMobi).then(createHtml).then(createChunked).then(createPdf);
-            //checkoutFiles().done(createEpub().done(createHtml().done(createMobi().done(createChunked().done(createPdf)))));
-            // Non-blocking
-           // checkoutFiles().pipe(createEpub().pipe(createHtml().pipe(createMobi().pipe(createChunked().pipe(createPdf)))));
-            //$.when(checkoutFiles()).then(createEpub()).then(createHtml(), createMobi(), createChunked(), createPdf());
+            function createDocx () {
+                return $.get("/gittobook/ajax?id=<?= $id ?>&format=docx", function (data) {
+                    $('.loader_message').append(data);
+                });
+            }
             
-            //$.when(checkoutFiles()).then(createEpub()).then(createHtml(), createMobi(), createChunked(), createPdf());
-            /*
-            var dfd = $.Deferred();
-            dfd.done(checkoutFiles)
-                    .done(createHtml)
-                    .done(createChunked)
-                    .done(createEpub)
-                    .done(createMobi)
-                    .done(createPdf);
-            
-            dfd.resolve();
-            */
+            checkoutFiles().then(createEpub).then(createMobi).then(createHtml).then(createChunked).then(createPdf).then(createDocx);
+
         </script>
        
         
@@ -728,7 +718,8 @@ class module {
         // html
         if (in_array('html-chunked', $formats) && $format == 'html-chunked') {
 
-            $files = $this->getFilesAry($id, '/*.md');
+            // $files = glob("*.{jpg,png,gif}", GLOB_BRACE);
+            $files = $this->getMarkdownFilesAry($id, '/*.{md,markdown}', GLOB_BRACE);
             $repo_path = $this->repoPath($id);
             
             $ret = 0;
@@ -803,6 +794,12 @@ class module {
         // pdf
         if (in_array('pdf', $formats) && $format == 'pdf') {
             $this->pandocCommand($id, 'pdf', $options);
+            die();
+            
+        }
+        
+        if (in_array('docx', $formats) && $format == 'docx') {
+            $this->pandocCommand($id, 'docx', $options);
             die();
             
         }
@@ -1045,11 +1042,12 @@ date: '{$date}'
 private: 0
 # default formats
 format-arguments:
-    #pdf: -s -S --toc
+    pdf: -s -S --toc
+    docx: -s -S --toc
     html: -s -S --template={$template} --chapters --number-sections --toc
     #html-chunked: -s -S --template={$chunked} --chapters --number-sections --toc
     epub: -s -S  --epub-chapter-level=3 --number-sections --toc
-    mobi:
+    #mobi:
 ignore-files:
 
 ...
@@ -1124,7 +1122,9 @@ EOF;
      */
     public function filesAsStr($id) {
        
-        $files = $this->getFilesAry($id,  "/*.md");
+        $files = $this->getMarkdownFilesAry($id, '/*.{md,markdown}', GLOB_BRACE);
+
+        // $files = $this->getMarkdownFilesAry($id,  "/*.markdown");
         if (empty($files)) {
             return false;
         }
@@ -1201,6 +1201,10 @@ EOF;
         
         if ($type == 'pdf') {
             $str.= " --latex-engine=xelatex ";
+        }
+        
+        if ($type == 'docx') {
+            $str.= "  ";
         }
         
         // +line_blocks

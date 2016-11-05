@@ -6,7 +6,7 @@ Enter the git repo url on your install, and the different formats will be build.
 
 # Online version
 
-<http://gittobook.org/>
+<https://gittobook.org/>
 
 # Docs
 
