@@ -624,7 +624,7 @@ class module {
         $id = filter_var($_GET['id'], FILTER_VALIDATE_INT);
         $format = filter_var($_GET['format']);
         
-        $is_user = !user::ownID('gitrepo', $id, session::getUserId());
+        $is_user = user::ownID('gitrepo', $id, session::getUserId());
         if (!$is_user AND !session::isAdmin()) {
             echo lang::translate("You can not perform any action on this page.");
             die();
