@@ -2,6 +2,14 @@
 
 $LANG = array();
 
+// Translation of file modules/gittobook/install.inc
+
+$LANG['Books'] = 'Books';
+
+// Translation of file modules/gittobook/menu.inc
+
+$LANG['Your repos'] = 'Your repos';
+
 // Translation of file modules/gittobook/module.php
 
 $LANG['List of books. Page '] = 'List of books. Page ';
@@ -25,13 +33,14 @@ $LANG['Cover file does not exists in repo: '] = 'Cover file does not exists in r
 $LANG['Correct path and re-build if you want your own cover. We use a auto generated cover'] = 'Correct path and re-build if you want your own cover. We use a auto generated cover';
 $LANG['Your cover image does not have the correct type. Allowed types are gif, jpg, jpeg, png'] = 'Your cover image does not have the correct type. Allowed types are gif, jpg, jpeg, png';
 $LANG['Correct image and re-build. We use a default cover'] = 'Correct image and re-build. We use a default cover';
-$LANG['Could not write to file system '] = 'Could not write to file system ';
+$LANG['Could not write to file system:'] = 'Could not write to file system:';
 $LANG['You have a file in your css path with wrong mime-type. Found file: '] = 'You have a file in your css path with wrong mime-type. Found file: ';
 $LANG['Found illigal options in <span class="notranslate"><b>format-arguments</b></span>: '] = 'Found illigal options in <span class="notranslate"><b>format-arguments</b></span>: ';
 $LANG['Remove it from <b>meta.yaml</b>'] = 'Remove it from <b>meta.yaml</b>';
 $LANG['You will need to have a title and a cover image when creating MOBI files from Epub files'] = 'You will need to have a title and a cover image when creating MOBI files from Epub files';
 $LANG['All image paths needs to be correct when creating the MOBI file.'] = 'All image paths needs to be correct when creating the MOBI file.';
 $LANG['Done '] = 'Done ';
+$LANG['(Read online - or Download as Epub or Mobi file)'] = '(Read online - or Download as Epub or Mobi file)';
 $LANG['Repo URL: '] = 'Repo URL: ';
 $LANG['Edited by: '] = 'Edited by: ';
 $LANG['Cover image: '] = 'Cover image: ';
@@ -49,9 +58,3 @@ $LANG['in type '] = 'in type ';
 $LANG['Error. You will need to have .md files written in markdown in your repo. No such files found!'] = 'Error. You will need to have .md files written in markdown in your repo. No such files found!';
 $LANG['Failed to create export of type: '] = 'Failed to create export of type: ';
 $LANG['Done '] = 'Done ';
-// Translation of file modules/gittobook/install.inc
-
-$LANG['Books'] = 'Books';
-// Translation of file modules/gittobook/menu.inc
-
-$LANG['Your repos'] = 'Your repos';

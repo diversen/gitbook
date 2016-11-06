@@ -18,12 +18,12 @@ use diversen\pagination;
 use diversen\sendfile;
 use diversen\session;
 use diversen\strings;
-use diversen\template;
 use diversen\template\assets;
 use diversen\template\meta;
 use diversen\uri\direct;
 use diversen\user;
 use diversen\valid;
+use diversen\meta as metaTags;
 use Symfony\Component\Filesystem\Filesystem;
 use Symfony\Component\Yaml\Dumper;
 use Symfony\Component\Yaml\Parser;
@@ -265,7 +265,7 @@ class module {
                 'delete_files', lang::translate('Remove git repo and exported files - but leave repo in database'));
         
         echo helpers::confirmDeleteForm(
-                'delete_all', lang::translate('Remove everything. Be carefull as any links to this repo no longer will be found!'));
+                'delete_all', lang::translate('Remove everything. Be careful as any links to this repo no longer will be found!'));
     }
 
     /**
@@ -555,9 +555,7 @@ class module {
         </div>
 
         <script type="text/javascript">
-            
-
-            
+   
             var $loading = $('.loader_gif').hide();
             $(document).ajaxStart(function () {
                 $loading.show();
@@ -614,9 +612,49 @@ class module {
         
         <?php
     }
+    
+    /**
+     * Get various info from repo url
+     * @staticvar array $meta
+     * @param int $id
+     * @return array $meta
+     */
+    public function metaFromRepo ($id) {
+        
+        static $meta;
+        if ($meta) {
+            return $meta;
+        }
+        
+        $meta = [];
+        
+        $row = $this->get($id);
+        $parts = parse_url($row['repo']);
+        $path_parts = explode( '/', $parts['path']);
+        
+        // Author from repo name
+        $meta['author'][] = $path_parts[1];
+        
+        // Title
+        $title = $path_parts[2];
+        $title = ucfirst(str_replace('-', ' ', $title));
+        $meta['title'] = $title;
+        
+        // Subtitle from meta-tags
+        $m = new metaTags(); 
+        $meta_tags = $m->getMeta($row['repo']);
+        
+        $sub = '';
+        if (isset($meta_tags['title'])) {
+            $sub = $meta_tags['title'];
+        }
+
+        $meta['Subtitle'] = $sub;
+        return $meta;
+    }
 
     /**
-     * perform ajax call
+     * Perform ajax call
      */
     public function ajaxAction() {
         
@@ -704,7 +742,7 @@ class module {
                 $output = array();
                 exec($command, $output, $ret);
                 if ($ret) {
-                    echo lang::translate("Failed to create export of type: ") . "html (chunks)" . "<br />";
+                    echo lang::translate("Failed to create export of type: ") . "html-chunked" . "<br />";
                     echo html::getErrors($output);
                     echo $command;
                     log::error($command);
@@ -840,10 +878,12 @@ class module {
         $fs->mkdir($public_path, 0777);
         
         // generate cover
-        $yaml = $this->yamlAsAry($id);
+        $yaml = $this->yamlAsAry($id, true);
+
+        
         $c = new cover();
         if ($yaml['cover-image'] == 'Not set') {
-            $c->create($id);
+            $c->create($id, $yaml);
             $cover_image = conf::pathHtdocs() . "/books/$id/cover.png"; 
         } else {
             $cover_image = $this->repoPath($id) . "/" . $yaml['cover-image'];
@@ -871,7 +911,7 @@ class module {
         $yaml['cover-image'] = conf::pathHtdocs()  . "$image_path";
         
         // generate yaml meta in exports
-        $yaml_res = $this->yamlExportsMeta($id, $yaml);
+        $yaml_res = $this->yamlExportYaml($id, $yaml);
         if (!$yaml_res) {
             echo html::getError('Could not write to filesystem. If you are admin you should fix this.');
         }
@@ -886,10 +926,12 @@ class module {
             die();
         }
         
+        // print_r($yaml); die;
         $bean = rb::getBean('gitrepo', 'id', $id);
         $bean->subtitle = $yaml['Subtitle'];
         $bean->title = $yaml['title'];
         $bean->image = $image_path; 
+        $bean->author = $yaml['author'][0];
         \R::store($bean);
     }
     
@@ -1019,34 +1061,54 @@ EOF;
      * some default options when meta.yaml is not supplied.
      * @return string $str defauly yaml options
      */
-    public function yamlDefaultAry() {
+    public function yamlDefaultAry($id = null) {
+        
+        $row = $this->get($id);
+
+        
+        
         $str = $this->yamlDefaultStr();
         $yaml = new Parser();
-        return $yaml->parse($str);
+        $parsed = $yaml->parse($str);
+
+        
+        
+        return $parsed;
+    }
+    
+    public function repoAuthor ($repo_url) {
+        $name = $this->repoName($repo_url);
+        return $name;
     }
 
     /**
-     * returns parsed yaml
+     * Returns parsed yaml
      * @param int $id repo id
      * @return array $values yaml as array
      */
-    public function yamlAsAry($id) {
+    public function yamlAsAry($id, $fetch_meta = false) {
         
         $yaml = new Parser();
         $file = $this->repoPath($id) . "/meta.yaml";
         
+        $values = [];
         if (file_exists($file)) {  
             try {
-            
                 $values = $yaml->parse(file_get_contents($file));
             } catch (Exception $e) {
                 $this->errors['yaml'] = $e->getMessage();
-                $values = $this->yamlDefaultAry();
+                $values = $this->yamlDefaultAry($id);
             }
             $values = $this->yamlFix($values);
+            
         } else {
-            $values = $this->yamlDefaultAry();
+            $values = $this->yamlDefaultAry($id);
+            if ($fetch_meta) {
+                $meta = $this->metaFromRepo($id);
+                $values = array_merge($values, $meta );
+            }            
         }
+        
         return $values;
     }
     
@@ -1109,8 +1171,12 @@ EOF;
      * @param int $id repo id
      * @return boolean $res 
      */
-    public function yamlExportsMeta ($id, $yaml) {
-        //$yaml = $this->yamlAsAry($id);
+    public function yamlExportYaml ($id, $yaml) {
+        
+        if ($yaml['title'] == 'Untitled') {
+            $repo = $this->repoPath($id);
+        }
+        
         $dumper = new Dumper();
         $str = $dumper->dump($yaml, 2);        
         $str = "---\n" . $str . "...\n\n\n";
@@ -1398,7 +1464,7 @@ EOF;
      */
     public function execClone($row) {
         $clone_path = $this->repoCheckoutPath($row);
-        $command = "cd $clone_path && git clone  $row[repo]";
+        $command = "cd $clone_path && git clone  --depth 1 $row[repo]";
         exec($command, $output, $res);
         if ($res) {
             log::error($output);
@@ -1414,7 +1480,7 @@ EOF;
     public function checkout($row) {
         $checkout_path = $this->repoCheckoutPath($row);
         $checkout_path.= "/$row[name]";
-        $command = "cd $checkout_path && git pull ";
+        $command = "cd $checkout_path && git fetch --depth 1 ";
         exec($command, $output, $res);
         if ($res) {
             log::error($output);
@@ -1446,21 +1512,18 @@ EOF;
         $id = direct::fragment(1);
         
         // check if repo is published
-        $repo = $this->get(array('id =' => $id));
-        if (empty($repo)) {
+        $row = $this->get(array('id =' => $id));
+        if (empty($row)) {
             moduleloader::setStatus(404);
             return false;
         }
         
         $user_owns = user::ownID('gitrepo', $id, session::getUserId());
-        if ($repo['published'] == 0 && !$user_owns) {
+        if ($row['published'] == 0 && !$user_owns) {
             moduleloader::setStatus(404);
             return false;
         }
-        
-        if (empty($repo)) {
-            
-        }
+
         
         // increment
         $c = new counter();
@@ -1475,7 +1538,7 @@ EOF;
         
         $str = '';
         $options = array ('share' => 1, 'exports' => 1 );
-        $str.= $this->viewHeaderCommon($repo, $options);
+        $str.= $this->viewHeaderCommon($row, $options);
             
         // chunked precede single html document
         if (isset($yaml['format-arguments']['html-chunked'])) {
@@ -1496,9 +1559,10 @@ EOF;
         }
         
         // set meta
-        $author = $this->author($yaml['author']);
+        //$author = $this->author($yaml['author']);
+        $sub_title = $row['subtitle'] . ' ' . lang::translate('(Read online - or Download as Epub or Mobi file)');
         meta::setMetaAll(
-                $yaml['title'], $yaml['Subtitle'], $yaml['keywords'], $repo['image'], 'book', $author);
+                $row['title'], $sub_title, $yaml['keywords'], $row['image'], 'book', $row['author']);
         
         echo $str;
     }
