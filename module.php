@@ -1464,7 +1464,7 @@ EOF;
      */
     public function execClone($row) {
         $clone_path = $this->repoCheckoutPath($row);
-        $command = "cd $clone_path && git clone  --depth 1 $row[repo]";
+        $command = "cd $clone_path  && git clone  $row[repo]";
         exec($command, $output, $res);
         if ($res) {
             log::error($output);
@@ -1480,7 +1480,8 @@ EOF;
     public function checkout($row) {
         $checkout_path = $this->repoCheckoutPath($row);
         $checkout_path.= "/$row[name]";
-        $command = "cd $checkout_path && git fetch --depth 1 ";
+        
+        $command = "cd $checkout_path && git pull ";
         exec($command, $output, $res);
         if ($res) {
             log::error($output);
