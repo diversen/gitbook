@@ -546,10 +546,15 @@ class module {
      */
     public function checkoutAction() {
         $id = $_GET['id'];
+        
+        
+        
         ?>
+
+        <button class="uk-button checkout" type="button">Checkout and build</button>
         <div class="progress">
             <img class ="loader_gif" style="float:left;margin:3px 5px 0 0;" src="/images/load.gif" width="16" />
-            <div class="loader_message"><?= lang::translate("Wait while generating site. This may take a minute or two") ?></div>
+            <div class="loader_message"></div>
         </div>
         <div class ="result">
         </div>
@@ -559,57 +564,30 @@ class module {
             var $loading = $('.loader_gif').hide();
             $(document).ajaxStart(function () {
                 $loading.show();
+                $(".loader_message").html('<?= lang::translate("Wait while generating site. This may take a minute or two") ?>');
             }).ajaxStop(function () {
                 $loading.hide();
             });
-
-            function checkoutFiles () {
-                return $.get("/gittobook/ajax?id=<?= $id ?>&format=files", function (data) {
-                    $('.loader_message').append(data);
-                });
-            }
-                        
-            function createHtml () {
-                return $.get("/gittobook/ajax?id=<?= $id ?>&format=html", function (data) {
-                    $('.loader_message').append(data);
-                });
-            }
             
-            function createChunked () {
-                return $.get("/gittobook/ajax?id=<?= $id ?>&format=html-chunked", function (data) {
-                    $('.loader_message').append(data);
-                });
-            }
-             
-            function createEpub () {
-                return $.get("/gittobook/ajax?id=<?= $id ?>&format=epub", function (data) {
-                    $('.loader_message').append(data);
-                });
-            }
-             
-            function createMobi () {
-                return $.get("/gittobook/ajax?id=<?= $id ?>&format=mobi", function (data) {
-                    $('.loader_message').append(data);
-                });
-            }
-
-            function createPdf () {
-                return $.get("/gittobook/ajax?id=<?= $id ?>&format=pdf", function (data) {
-                    $('.loader_message').append(data);
-                });
-            }
+            $.ajaxSetup({
+                beforeSend: function(xhr) {
+                    $(window).bind('beforeunload', function() {
+                        xhr.abort();
+                    });
+                }
+            });
             
-            function createDocx () {
-                return $.get("/gittobook/ajax?id=<?= $id ?>&format=docx", function (data) {
-                    $('.loader_message').append(data);
+            $(document).ready(function(){
+                $( ".checkout" ).click(function( event ) {
+                    event.preventDefault();
+                    $.get("/gittobook/ajax?id=<?= $id ?>", function (data) {
+                        $('.loader_message').append(data);
+                    });
                 });
-            }
-            
-            checkoutFiles().then(createEpub).then(createMobi).then(createHtml).then(createChunked).then(createPdf).then(createDocx);
+            });
 
+            
         </script>
-       
-        
         <?php
     }
     
@@ -670,10 +648,12 @@ class module {
         
         sleep($sleep);
         
-        if ($format == 'files') {
-            $this->ajaxGenerateFiles($id);
-            die();
-        }
+        //if ($format == 'files') {
+        $this->ajaxGenerateFiles($id);
+        //    die();
+        //}
+        
+        //echo "OK";
 
         $options = $this->yamlAsAry($id);
         $db_values = ['private' => $options['private']];
@@ -686,15 +666,16 @@ class module {
         $formats = $this->exportFormatsReal($options['format-arguments']);
         
         // html
-        if (in_array('html', $formats) && $format == 'html') {
+        if (in_array('html', $formats) ) {
             
             // run pandoc
             $ret = $this->pandocCommand($id, 'html', $options);
             if ($ret) {
                 $db_values['published'] = 0;
                 $this->dbUpdateRepo($id, $db_values);
-                die();
-            }
+                //die();
+                $this->errors[] = lang::translate('Could not publish HTML');
+            } 
             
             // html not self-contained
             $res = $this->moveAssets($id, 'html', $options);
@@ -704,11 +685,10 @@ class module {
                 $db_values['published'] = 1;
                 $this->dbUpdateRepo($id, $db_values);
             }
-            die();
         }
-        
-        // html
-        if (in_array('html-chunked', $formats) && $format == 'html-chunked') {
+
+        // html-chunked
+        if (in_array('html-chunked', $formats) ) {
 
             // $files = glob("*.{jpg,png,gif}", GLOB_BRACE);
             $files_md = $this->getMarkdownFilesAry($id, '/*.md');
@@ -754,7 +734,7 @@ class module {
             if ($ret) {
                 $db_values['published'] = 1;
                 $this->dbUpdateRepo($id, $db_values);
-                die();
+                //die();
             }
             
             $menu = $this->generateMenu($id, $files);
@@ -777,40 +757,33 @@ class module {
         }
         
         // epub
-        if (in_array('epub', $formats) && $format == 'epub') {
+        if (in_array('epub', $formats) ) {
             $this->pandocCommand($id, 'epub', $options);
-            die();
         }
         
         // mobi
-        if (in_array('mobi', $formats) && $format == 'mobi') {    
+        if (in_array('mobi', $formats) ) {    
             $this->kindlegenCommand($id, 'mobi', $options);
-            die();
         }
         
         // pdf
-        if (in_array('pdf', $formats) && $format == 'pdf') {
-            $this->pandocCommand($id, 'pdf', $options);
-            die();
-            
+        if (in_array('pdf', $formats)) {
+            $this->pandocCommand($id, 'pdf', $options); 
         }
         
-        if (in_array('docx', $formats) && $format == 'docx') {
+        if (in_array('docx', $formats)) {
             $this->pandocCommand($id, 'docx', $options);
-            die();
             
         }
         
         // docbook
-        if (in_array('docbook', $formats) && $format == 'docbook') {
+        if (in_array('docbook', $formats)) {
             $this->pandocCommand($id, 'docbook', $options);
-            die();
         }
         
         // texi
-        if (in_array('texi', $formats) && $format == 'texi') {
+        if (in_array('texi', $formats)) {
             $this->pandocCommand($id, 'texi', $options);
-            die();
         }
         die();
     }
@@ -932,7 +905,7 @@ class module {
         $bean->title = $yaml['title'];
         $bean->image = $image_path; 
         $bean->author = $yaml['author'][0];
-        \R::store($bean);
+        return \R::store($bean);
     }
     
     
