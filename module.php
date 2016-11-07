@@ -580,7 +580,7 @@ class module {
             $(document).ready(function(){
                 $( ".checkout" ).click(function( event ) {
                     event.preventDefault();
-                    $.get("/gittobook/ajax?id=<?= $id ?>", function (data) {
+                    $.post("/gittobook/ajax?id=<?= $id ?>", function (data) {
                         $('.loader_message').append(data);
                     });
                 });
@@ -645,6 +645,8 @@ class module {
             echo lang::translate("You can not perform any action on this page.");
             die();
         }
+        
+        session_write_close();
         
         sleep($sleep);
         
