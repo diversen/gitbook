@@ -23,6 +23,7 @@ use diversen\template\meta;
 use diversen\uri\direct;
 use diversen\user;
 use diversen\valid;
+use diversen\mirrorPath;
 use diversen\meta as metaTags;
 use Symfony\Component\Filesystem\Filesystem;
 use Symfony\Component\Yaml\Dumper;
@@ -73,7 +74,7 @@ class module {
      * public
      * @var array $mime 
      */
-    public $mime = ['image/png', 'image/gif', 'image/jpeg', 'image/jpg'];
+    public $mime = ['png', 'gif', 'jpeg', 'jpg'];
     
     /**
      * some strange test action ...
@@ -545,9 +546,7 @@ class module {
      * checkout or clone repo
      */
     public function checkoutAction() {
-        $id = $_GET['id'];
-        
-        
+        $id = $_GET['id'];       
         
         ?>
 
@@ -638,7 +637,7 @@ class module {
         
         $sleep = 0;
         $id = filter_var($_GET['id'], FILTER_VALIDATE_INT);
-        $format = filter_var($_GET['format']);
+        // $format = filter_var($_GET['format']);
         
         $is_user = user::ownID('gitrepo', $id, session::getUserId());
         if (!$is_user AND !session::isAdmin()) {
@@ -649,13 +648,8 @@ class module {
         session_write_close();
         
         sleep($sleep);
-        
-        //if ($format == 'files') {
+
         $this->ajaxGenerateFiles($id);
-        //    die();
-        //}
-        
-        //echo "OK";
 
         $options = $this->yamlAsAry($id);
         $db_values = ['private' => $options['private']];
@@ -857,6 +851,8 @@ class module {
 
         
         $c = new cover();
+        
+        // Default is not set
         if ($yaml['cover-image'] == 'Not set') {
             $c->create($id, $yaml);
             $cover_image = conf::pathHtdocs() . "/books/$id/cover.png"; 
@@ -869,15 +865,15 @@ class module {
             $error = lang::translate('Cover file does not exists in repo: ') . $yaml['cover-image'] . ". "; 
             $error.= lang::translate('Correct path and re-build if you want your own cover. We use a auto generated cover');
             echo html::getError($error);
-            $c->create($id);
+            $c->create($id, $yaml);
             $cover_image = conf::pathHtdocs() . "/books/$id/cover.png"; 
         }
         
-        $mime = file::getMime($cover_image);
+        $mime = file::getSecMime($cover_image);
         if (!in_array($mime, $this->mime)) {
             $error = lang::translate('Your cover image does not have the correct type. Allowed types are gif, jpg, jpeg, png') . ". ";
             $error.= lang::translate('Correct image and re-build. We use a default cover');
-            $c->create($id);
+            $c->create($id, $yaml);
             $cover_image = conf::pathHtdocs() . "/books/$id/cover.png"; 
             echo html::getError($error);
         }
@@ -951,24 +947,16 @@ class module {
      * @return boolean
      */
     public function moveAssets($id, $type, $options) {
-        $repo = $this->get($id);
 
         // move to dir
         $repo_path = $this->repoPath($id);
         $export_path = $this->exportsDir($id);
 
-        $image_path = $repo_path . "/images";
-        if (file_exists($image_path)) {
-            $image_files = $this->globdir($image_path, "/*");
-            $res = $this->checkLegalAssets($image_files, 'images');
+        $m = new mirrorPath();
+        $m->deleteBefore = false; // Delete before mirroring. Default setting
+        $m->allowTypes = $this->mime;
 
-            if (!$res) {
-                echo html::getErrors($this->errors);
-                return false;
-            }
-            $fs = new Filesystem();
-            $fs->mirror($image_path, $export_path . "/images", null, array('delete' => true));
-        }
+        $m->mirror($repo_path, $export_path); // mirror
         return true;
     }
 
