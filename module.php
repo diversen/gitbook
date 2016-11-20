@@ -29,6 +29,7 @@ use Symfony\Component\Filesystem\Filesystem;
 use Symfony\Component\Yaml\Dumper;
 use Symfony\Component\Yaml\Parser;
 use diversen\uri;
+use RedBeanPHP\R;
 
 use modules\gittobook\share as share;
 use modules\count\module as counter;
@@ -102,7 +103,7 @@ class module {
      * connect to database
      */
     public function __construct() {
-        rb::connect();
+        rb::connectExisting();
         $css = conf::getModulePath('gittobook') . "/assets.css";
         assets::setInlineCss($css);
     }
@@ -133,6 +134,8 @@ class module {
             return;
         }
 
+        echo $this->viewAddRepo();
+        
         $bean = rb::getBean('gitrepo', 'user_id', session::getUserId());
         if ($bean->id) {
             $user_id = session::getUserId();
@@ -144,7 +147,7 @@ class module {
                         'exports' => 1));
         }
 
-        echo $this->viewAddRepo();
+        
     }
     
     
@@ -378,7 +381,7 @@ class module {
             $this->validateRepo();
             if (empty($this->errors)) {
                 $res = $this->dbAddRepo();
-                http::locationHeader("/gittobook/checkout?id=$res", lang::translate('Will now checkout repo'));
+                http::locationHeader("/gittobook/checkout?id=$res");
             } else {
                 echo html::getErrors($this->errors);
             }
@@ -903,7 +906,7 @@ class module {
         $bean->title = $yaml['title'];
         $bean->image = $image_path; 
         $bean->author = $yaml['author'][0];
-        return \R::store($bean);
+        return R::store($bean);
     }
     
     
@@ -1655,6 +1658,8 @@ EOF;
         // exports url
         $url = $this->exportsUrl($repo);
         
+        $desc_td_class = '<td class="uk-width-3-10">';
+        
         // string
         $str = '';
         $str.= html::getHeadline(html::createLink($url, $repo['title']), 'h3'); //, html::getHeadline($repo['title']));
@@ -1665,26 +1670,26 @@ EOF;
         $str.= html::getHeadline($repo['subtitle'], 'h5');
         $str.= html::tableBegin('gb_table uk-table');
         $str.= '<tr>';
-        $str.= '<td>';
+        $str.= $desc_td_class;
         $str.= lang::translate('Repo URL: ');
         $str.='</td>';
-        $str.='<td>';
+        $str.= "<td>";
         $str.= html::createLink($repo['repo'], $repo['repo']) . "<br />";
         $str.='</td>';
         $str.='</tr>';
         
         $str.='<tr>';
-        $str.='<td>';
+        $str.= $desc_td_class;
 
         $str.= lang::translate('Edited by: ');
         $str.='</td>';
-        $str.='<td>';
+        $str.= "<td>";
         $str.= user::getProfileLink($repo['user_id']); 
         $str.='</td>';
         $str.='</tr>';
         
         $str.='<tr>';
-        $str.='<td>';
+        $str.= $desc_td_class;
 
         $str.= lang::translate('Cover image: ');
         $str.='</td>';
@@ -1703,7 +1708,7 @@ EOF;
         
         if (isset($options['options'])) {
             $str.='<tr>';
-            $str.='<td>';
+            $str.= $desc_td_class;
             $str.= lang::translate('Options');
             $str.='</td>';
             $str.='<td>';
@@ -1718,7 +1723,7 @@ EOF;
         
         if ($info['controller'] != 'index' AND $info['controller'] != '') {
             $str.= '<tr>';
-            $str.= '<td>';
+            $str.= $desc_td_class;
             $str.= lang::translate('Share this using: ');
             $str.= '</td>';
             $str.= '<td>';
