@@ -650,6 +650,8 @@ class module {
         
         session_write_close();
         
+        ignore_user_abort(true);
+        
         sleep($sleep);
 
         $this->ajaxGenerateFiles($id);
