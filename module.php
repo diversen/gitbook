@@ -1415,11 +1415,13 @@ EOF;
     public function execCheckout($id) {
 
         $row = q::select('gitrepo')->filter('id =', $id)->fetchSingle();
+        /*
         if (!$this->isRepo($row)) {
             $res = $this->execClone($row);
         } else {
             $res = $this->checkout($row);
-        }
+        }*/
+        $res = $this->execClone($row);
         return $res;
     }
 
@@ -1430,7 +1432,8 @@ EOF;
      */
     public function execClone($row) {
         $clone_path = $this->repoCheckoutPath($row);
-        $command = "cd $clone_path  && git clone  $row[repo]";
+        
+        $command = "cd $clone_path  && git clone  $row[repo] --depth 1";
         exec($command, $output, $res);
         if ($res) {
             log::error($output);
@@ -1443,6 +1446,7 @@ EOF;
      * @param array $row db row
      * @return int $res result of exec
      */
+    /*
     public function checkout($row) {
         $checkout_path = $this->repoCheckoutPath($row);
         $checkout_path.= "/$row[name]";
@@ -1453,7 +1457,7 @@ EOF;
             log::error($output);
         }
         return $res;
-    }
+    }*/
 
     /**
      * get place where we checkout repo
@@ -1463,6 +1467,10 @@ EOF;
     public function repoCheckoutPath($repo) {
 
         $path = conf::pathBase() . "/private/gittobook/" . $repo['id'];
+        
+        $f = new Filesystem();
+        $f->remove($path);
+        
         if (!file_exists($path)) {
             mkdir($path, 0777, true);
         }
