@@ -40,8 +40,17 @@ class module {
     public function downloadAction () {
         
         $id = direct::fragment(1);
+        if (!$id) {
+            moduleloader::setStatus(404);
+            return;
+        }
         
         $repo = $this->get($id);
+        if (empty($repo)) {
+            moduleloader::setStatus(404);
+            return;
+        }
+        
         $user_owns = user::ownID('gitrepo', $repo['id'], session::getUserId());
         if ($user_owns OR !$repo['private']) {
             
@@ -83,6 +92,9 @@ class module {
     public function testAction () {
         $file = '/home/dennis/www/gitbook/htdocs/books/54/06-profeternes-paradis.md';
         //$y = new Yaml();
+        if (!file_exists($file)) {
+            die("Test file: $file does not exists");
+        }
         $yaml = new Parser();
         $values = $yaml->parse(file_get_contents($file));
         print_r($values); die;
@@ -244,6 +256,12 @@ class module {
      * @return type
      */
     public function deleteAction() {
+
+	if (!isset($_GET['id'])) {
+            moduleloader::setStatus(404);
+            return;
+	}
+
         if (!user::ownID('gitrepo', $_GET['id'], session::getUserId())) {
             if (!session::isAdmin()) {
                 moduleloader::setStatus(403);
@@ -549,7 +567,12 @@ class module {
      * checkout or clone repo
      */
     public function checkoutAction() {
-        $id = $_GET['id'];       
+        
+	if (!isset($_GET['id'])) {
+            moduleloader::setStatus(404);
+            return;
+	}
+	$id = $_GET['id'];       
         
         ?>
 
@@ -637,7 +660,12 @@ class module {
      * Perform ajax call
      */
     public function ajaxAction() {
-        
+       
+	if (!isset($_GET['id'])) {
+            moduleloader::setStatus(404);
+            return;
+	}
+ 
         $sleep = 0;
         $id = filter_var($_GET['id'], FILTER_VALIDATE_INT);
         // $format = filter_var($_GET['format']);

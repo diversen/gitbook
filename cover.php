@@ -13,8 +13,10 @@ use modules\gittobook\module;
 
 class cover extends module {
 
-    public function create($id, $yaml) {
-        
+    public function create($id, $yaml = []) {
+        if (!$id) {
+            return false;
+        }
         $save = conf::pathHtdocs() . "/books/$id/cover.png";
         $title = mb_substr($yaml['title'], 0, 60);
         
