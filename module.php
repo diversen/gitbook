@@ -31,9 +31,9 @@ use Symfony\Component\Yaml\Parser;
 use diversen\uri;
 use RedBeanPHP\R;
 
-use modules\gittobook\share as share;
+use modules\gittobook\share;
 use modules\count\module as counter;
-use modules\gittobook\cover as cover;
+use modules\gittobook\cover;
 
 class module {
     
@@ -169,7 +169,9 @@ class module {
     public function indexAction() {
         
         $per_page = 10;
-        $num_rows = q::numRows('gitrepo')->fetch();
+        $num_rows = q::numRows('gitrepo')->
+                filter('published =', 1)->
+                fetch();
         $pager = new pagination($num_rows, $per_page);
         
         $title = lang::translate('List of books. Page ') . $pager->getPageNum();
