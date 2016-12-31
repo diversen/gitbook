@@ -13,3 +13,7 @@ Enter the git repo url on your install, and the different formats will be build.
 Documentation for building: 
 
 <http://gittobook.org/books/47/git-to-book-docs>
+
+# License
+
+MIT

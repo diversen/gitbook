@@ -24,6 +24,7 @@ use diversen\uri\direct;
 use diversen\user;
 use diversen\valid;
 use diversen\mirrorPath;
+use diversen\git;
 use diversen\meta as metaTags;
 use Symfony\Component\Filesystem\Filesystem;
 use Symfony\Component\Yaml\Dumper;
@@ -230,21 +231,7 @@ class module {
         return $str;
     }
 
-    /**
-     * add repo to db
-     * @return type
-     */
-    public function dbAddRepo() {
-        $title = html::specialDecode($_POST['repo']);
-        $bean = rb::getBean('gitrepo', 'repo', $title);
-        $bean->uniqid = md5(uniqid('', true));
-        $bean->name = $this->repoName($title);
-        $bean->repo = $title;
-        $bean->date = date::getDateNow(array('hms' => true));
-        $bean->user_id = session::getUserId();
-        $bean->published = 1;
-        return rb::commitBean($bean);
-    }
+
 
     /**
      * list repos action
@@ -274,14 +261,20 @@ class module {
         if (isset($_POST['delete_files'])) {
             $this->deletePublicFiles($_GET['id']);
             $this->repoDeleteFiles($_GET['id']);
-            $this->dbUpdateRepo($_GET['id'], array('published' => 0));
+            
+            $db = new \modules\gittobook\db();
+            $db->updateRepo($_GET['id'], array('published' => 0));
+
             http::locationHeader('/gittobook/repos', lang::translate('Repo files has been purged!'));
         }
         
         if (isset($_POST['delete_all'])) {
             $this->deletePublicFiles($_GET['id']);
             $this->repoDeleteFiles($_GET['id']);
-            $this->dbDeleteRepo($_GET['id']);
+            
+            $db = new \modules\gittobook\db();
+            $db->deleteRepo($_GET['id']);
+
             http::locationHeader('/gittobook/repos', lang::translate('Repo files has been purged. Database entry has been removed!'));
         }
         
@@ -308,25 +301,6 @@ class module {
     public function repoDeleteFiles ($id) {
         $private_path = $this->repoPath($id);
         file::rrmdir($private_path);        
-    }
-    
-    /**
-     * update repo row
-     * @param int $id
-     * @param array $values
-     * @return int $res
-     */
-    public function dbUpdateRepo ($id, $values) {
-        return rb::updateBean('gitrepo', $id, $values);
-    } 
-
-    /**
-     * delete repo row from id
-     * @param int $id
-     * @return int $res
-     */
-    public function dbDeleteRepo($id) {
-        return $res = q::delete('gitrepo')->filter('id =', $id)->exec();
     }
 
     /**
@@ -400,7 +374,10 @@ class module {
         if (isset($_POST['repo_add'])) {
             $this->validateRepo();
             if (empty($this->errors)) {
-                $res = $this->dbAddRepo();
+                
+                $db = new \modules\gittobook\db();
+                $res = $db->addRepo();
+                
                 http::locationHeader("/gittobook/checkout?id=$res");
             } else {
                 echo html::getErrors($this->errors);
@@ -430,7 +407,7 @@ class module {
     public function repoPath($id) {
 
         $repo = $this->get($id);
-        $path = $this->repoName($repo['repo']);
+        $path = git::getRepoName($repo['repo']);
         $path = conf::pathBase() . "/private/gittobook/$id" . "/$path";
         return $path;
     }
@@ -466,7 +443,7 @@ class module {
         $path_full = $this->exportsDir($id);
         
         $controller_path = "/downloads/$id";
-        $name = $this->repoName($repo['repo']);
+        $name = git::getRepoName($repo['repo']);
         $exports = $this->exportFormatsIni();
         
         $ary = array ();
@@ -540,18 +517,6 @@ class module {
             }
         }
         return $final;
-    }
-
-    /**
-     * get repo name repo url
-     * @param string $url
-     * @return string $name
-     */
-    public function repoName($url) {
-        $ary = parse_url($url);
-        $parts = explode('/', $ary['path']);
-        $last = array_pop($parts);
-        return str_replace('.git', '', $last);
     }
 
     /**
@@ -703,7 +668,10 @@ class module {
             $ret = $this->pandocCommand($id, 'html', $options);
             if ($ret) {
                 $db_values['published'] = 0;
-                $this->dbUpdateRepo($id, $db_values);
+                
+                $db = new \modules\gittobook\db();
+                $db->updateRepo($id, $db_values);
+
                 //die();
                 $this->errors[] = lang::translate('Could not publish HTML');
             } 
@@ -714,7 +682,9 @@ class module {
                 $this->errors[] = lang::translate('Could not move all HTML assets');
             } else {
                 $db_values['published'] = 1;
-                $this->dbUpdateRepo($id, $db_values);
+                
+                $db = new \modules\gittobook\db();
+                $db->updateRepo($id, $db_values);
             }
         }
 
@@ -764,8 +734,9 @@ class module {
             
             if ($ret) {
                 $db_values['published'] = 1;
-                $this->dbUpdateRepo($id, $db_values);
-                //die();
+                
+                $db = new \modules\gittobook\db();
+                $db->updateRepo($id, $db_values);
             }
             
             $menu = $this->generateMenu($id, $files);
@@ -777,8 +748,8 @@ class module {
             if (!$res) {
                 $this->errors[] = lang::translate('Could not move all HTML assets');
             } else {
-                $db_values['published'] = 1;
-                $this->dbUpdateRepo($id, $db_values);
+                $db = new \modules\gittobook\db();
+                $db->updateRepo($id, $db_values);
             }
             
             
@@ -1075,7 +1046,7 @@ EOF;
     }
     
     public function repoAuthor ($repo_url) {
-        $name = $this->repoName($repo_url);
+        $name = git::getRepoName($repo_url);
         return $name;
     }
 
@@ -1385,7 +1356,7 @@ EOF;
 
         // repo name
         $repo = $this->get($id);
-        $repo_name = $this->repoName($repo['repo']);
+        $repo_name = git::getRepoName($repo['repo']);
 
         // get export file name and create dirs
         $export_file = $this->exportsDir($id) . "/$repo_name.$type";
