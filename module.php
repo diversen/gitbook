@@ -1235,7 +1235,11 @@ EOF;
         }
         
         // +line_blocks
-        $str.= " --from=markdown-raw_html+line_blocks";
+        // markdown_github
+        // +yaml_metadata_block
+        // $str.= " --from=markdown-raw_html+line_blocks";
+        $str.= " --from=markdown_github+yaml_metadata_block-raw_html+line_blocks";
+        // $str.= " --from=markdown_github+yaml_metadata_block";
         return $str;
     }
     
@@ -1702,6 +1706,11 @@ EOF;
         
         // string
         $str = '';
+        
+        if (empty($repo['title'])) {
+            $repo['title'] = lang::translate('Untitled');
+        }
+        
         $str.= html::getHeadline(html::createLink($url, $repo['title']), 'h3'); //, html::getHeadline($repo['title']));
         if (isset($options['admin'])) {
             return $str;
@@ -1712,6 +1721,7 @@ EOF;
         $str.= '<tr>';
         $str.= $desc_td_class;
         $str.= lang::translate('Repo URL: ');
+        
         $str.='</td>';
         $str.= "<td>";
         $str.= html::createLink($repo['repo'], $repo['repo']) . "<br />";

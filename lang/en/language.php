@@ -24,8 +24,8 @@ $LANG['Add'] = 'Add';
 $LANG['Not a correct repo URL'] = 'Not a correct repo URL';
 $LANG['Repo already exists'] = 'Repo already exists';
 $LANG['URL does not seem to be a git repo. If you know this is a git repo, please try again.'] = 'URL does not seem to be a git repo. If you know this is a git repo, please try again.';
-$LANG['Will now checkout repo'] = 'Will now checkout repo';
 $LANG['yaml error. Yaml file is not used. '] = 'yaml error. Yaml file is not used. ';
+$LANG['Could not publish HTML'] = 'Could not publish HTML';
 $LANG['Could not move all HTML assets'] = 'Could not move all HTML assets';
 $LANG['Could not checkout repo - You need to remove the repo and try again.'] = 'Could not checkout repo - You need to remove the repo and try again.';
 $LANG['Updated repo '] = 'Updated repo ';
@@ -41,6 +41,7 @@ $LANG['You will need to have a title and a cover image when creating MOBI files 
 $LANG['All image paths needs to be correct when creating the MOBI file.'] = 'All image paths needs to be correct when creating the MOBI file.';
 $LANG['Done '] = 'Done ';
 $LANG['(Read online - or Download as Epub or Mobi file)'] = '(Read online - or Download as Epub or Mobi file)';
+$LANG['Untitled'] = 'Untitled';
 $LANG['Repo URL: '] = 'Repo URL: ';
 $LANG['Edited by: '] = 'Edited by: ';
 $LANG['Cover image: '] = 'Cover image: ';

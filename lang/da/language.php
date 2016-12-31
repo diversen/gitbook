@@ -16,8 +16,8 @@ $LANG['Add'] = 'Tilføje';
 $LANG['Not a correct repo URL'] = 'Ikke en korrekt webadresse repo';
 $LANG['Repo already exists'] = 'Repo findes allerede';
 $LANG['URL does not seem to be a git repo. If you know this is a git repo, please try again.'] = 'URL synes ikke at være en git repo. Hvis du ved, det er en git repo, prøv igen.';
-$LANG['Will now checkout repo'] = 'Vil nu kassen repo';
 $LANG['yaml error. Yaml file is not used. '] = 'YAML fejl. YAML fil anvendes ikke.';
+$LANG['Could not publish HTML'] = 'Kunne ikke udgive HTML';
 $LANG['Could not move all HTML assets'] = 'Kunne ikke flytte alle HTML aktiver';
 $LANG['Could not checkout repo - You need to remove the repo and try again.'] = 'Kunne ikke kassen repo - Du skal fjerne repo, og prøv igen.';
 $LANG['Updated repo '] = 'Opdateret repo';
@@ -33,6 +33,7 @@ $LANG['You will need to have a title and a cover image when creating MOBI files 
 $LANG['All image paths needs to be correct when creating the MOBI file.'] = 'Alle billedfiler stier skal være korrekt, når du opretter MOBI-filen.';
 $LANG['Done '] = 'Færdig';
 $LANG['(Read online - or Download as Epub or Mobi file)'] = '(Læs online - eller Download som Epub eller Mobi fil)';
+$LANG['Untitled'] = 'Untitled';
 $LANG['Repo URL: '] = 'Repo URL:';
 $LANG['Edited by: '] = 'Redigeret af:';
 $LANG['Cover image: '] = 'Cover billede:';
