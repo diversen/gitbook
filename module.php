@@ -407,7 +407,7 @@ class module {
     public function repoPath($id) {
 
         $repo = $this->get($id);
-        $path = git::getRepoName($repo['repo']);
+        $path = git::getRepoNameFromRepoUrl($repo['repo']);
         $path = conf::pathBase() . "/private/gittobook/$id" . "/$path";
         return $path;
     }
@@ -443,7 +443,7 @@ class module {
         $path_full = $this->exportsDir($id);
         
         $controller_path = "/downloads/$id";
-        $name = git::getRepoName($repo['repo']);
+        $name = git::getRepoNameFromRepoUrl($repo['repo']);
         $exports = $this->exportFormatsIni();
         
         $ary = array ();
@@ -1046,7 +1046,7 @@ EOF;
     }
     
     public function repoAuthor ($repo_url) {
-        $name = git::getRepoName($repo_url);
+        $name = git::getRepoNameFromRepoUrl($repo_url);
         return $name;
     }
 
@@ -1356,7 +1356,7 @@ EOF;
 
         // repo name
         $repo = $this->get($id);
-        $repo_name = git::getRepoName($repo['repo']);
+        $repo_name = git::getRepoNameFromRepoUrl($repo['repo']);
 
         // get export file name and create dirs
         $export_file = $this->exportsDir($id) . "/$repo_name.$type";

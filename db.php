@@ -18,7 +18,7 @@ class db {
         $gitrepo = html::specialDecode($_POST['repo']);
         $bean = rb::getBean('gitrepo', 'repo', $gitrepo);
         $bean->uniqid = md5(uniqid('', true));
-        $bean->name = git::getRepoName($gitrepo);
+        $bean->name = git::getRepoNameFromRepoUrl($gitrepo);
         $bean->repo = $gitrepo;
         $bean->date = date::getDateNow(array('hms' => true));
         $bean->user_id = session::getUserId();
