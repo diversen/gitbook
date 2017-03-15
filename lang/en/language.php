@@ -33,7 +33,7 @@ $LANG['Cover file does not exists in repo: '] = 'Cover file does not exists in r
 $LANG['Correct path and re-build if you want your own cover. We use a auto generated cover'] = 'Correct path and re-build if you want your own cover. We use a auto generated cover';
 $LANG['Your cover image does not have the correct type. Allowed types are gif, jpg, jpeg, png'] = 'Your cover image does not have the correct type. Allowed types are gif, jpg, jpeg, png';
 $LANG['Correct image and re-build. We use a default cover'] = 'Correct image and re-build. We use a default cover';
-$LANG['Could not write to file system:'] = 'Could not write to file system:';
+$LANG['Could not write to file system. Be sure to have some .md or .markdown files:'] = 'Could not write to file system. Be sure to have some .md or .markdown files:';
 $LANG['You have a file in your css path with wrong mime-type. Found file: '] = 'You have a file in your css path with wrong mime-type. Found file: ';
 $LANG['Found illigal options in <span class="notranslate"><b>format-arguments</b></span>: '] = 'Found illigal options in <span class="notranslate"><b>format-arguments</b></span>: ';
 $LANG['Remove it from <b>meta.yaml</b>'] = 'Remove it from <b>meta.yaml</b>';

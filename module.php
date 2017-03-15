@@ -899,7 +899,7 @@ class module {
         
         $write_res = file_put_contents($md_file, $str);
         if (!$write_res) {
-            echo lang::translate('Could not write to file system:' . $md_file) . "<br />";
+            echo lang::translate('Could not write to file system. Be sure to have some .md or .markdown files:')  . $md_file . "<br />";
             die();
         }
         

@@ -25,7 +25,7 @@ $LANG['Cover file does not exists in repo: '] = 'Cover fil ikke eksisterer i rep
 $LANG['Correct path and re-build if you want your own cover. We use a auto generated cover'] = 'Korrekt sti og re-bygge, hvis du vil have dit eget cover. Vi bruger en auto genereret dæksel';
 $LANG['Your cover image does not have the correct type. Allowed types are gif, jpg, jpeg, png'] = 'Din dækning billede har ikke den korrekte type. Tilladt typer er gif, jpg, jpeg, png';
 $LANG['Correct image and re-build. We use a default cover'] = 'Korrekt billede og re-build. Vi bruger en standard dæksel';
-$LANG['Could not write to file system:'] = 'Kunne ikke skrive til filen systemet:';
+$LANG['Could not write to file system. Be sure to have some .md or .markdown files:'] = 'Kunne ikke skrive til filsystemet. Vær sikker på at have nogle .md eller .markdown filer:';
 $LANG['You have a file in your css path with wrong mime-type. Found file: '] = 'Du har en fil i din css vej med forkert mime-type. Fundet fil:';
 $LANG['Found illigal options in <span class="notranslate"><b>format-arguments</b></span>: '] = 'Fundet illigal muligheder i <span class="notranslate"><b>format-arguments</b></span> :';
 $LANG['Remove it from <b>meta.yaml</b>'] = 'Fjern den fra <b>meta.yaml</b>';
