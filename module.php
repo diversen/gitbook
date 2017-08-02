@@ -732,7 +732,7 @@ class module {
                 } 
             }
             
-            if ($ret) {
+            if (!$ret) {
                 $db_values['published'] = 1;
                 
                 $db = new \modules\gittobook\db();
